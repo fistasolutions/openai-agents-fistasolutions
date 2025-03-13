@@ -1,0 +1,20 @@
+[project]
+name = "basicopenaiagent"
+version = "0.1.0"
+description = "A basic OpenAI agent"
+readme = "README.md"
+authors = [
+    { name = "“fistasolutions”", email = "fistasolutions@gmail.com" }
+]
+requires-python = ">=3.12"
+dependencies = [
+    "openai-agents",
+    "python-dotenv",
+]
+
+[project.scripts]
+basicopenaiagent = "basicopenaiagent:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"

@@ -1,0 +1,20 @@
+[project]
+name = "chainlitdemo"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+authors = [
+    { name = "“fistasolutions”", email = "fistasolutions@gmail.com" }
+]
+requires-python = ">=3.12"
+dependencies = [
+    "chainlit>=2.4.1",
+    "openai-agents>=0.0.4",
+]
+
+[project.scripts]
+chainlitdemo = "chainlitdemo:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
