@@ -1,0 +1,27 @@
+# Ignore virtual environments in any subdirectory
+**/venv/
+**/__pycache__/
+**/*.pyc
+**/*.pyo
+**/*.pyd
+**/.venv/
+.venv/
+
+# Ignore common IDE/editor files
+.vscode/
+.idea/
+*.sublime-workspace
+
+# Ignore environment and dependency files
+.env
+*.env
+.DS_Store
+
+# Ignore build/dist directories
+**/dist/
+**/build/
+**/*.egg-info/
+
+# Ignore logs and temporary files
+**/logs/
+**/*.log
