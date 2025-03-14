@@ -2,6 +2,20 @@ from agents import Agent, InputGuardrail,GuardrailFunctionOutput, Runner
 from pydantic import BaseModel
 import asyncio
 
+import os
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
+
+# Access the API key
+openai_api_key = os.getenv("OPENAI_API_KEY")
+
+# Ensure the key is loaded
+if not openai_api_key:
+    raise ValueError("OPENAI_API_KEY is not set in .env file")
+
+
 class HomeworkOutput(BaseModel):
     is_homework: bool
     reasoning: str
