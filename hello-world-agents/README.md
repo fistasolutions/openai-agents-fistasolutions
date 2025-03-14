@@ -80,7 +80,7 @@ Ensure that the `.env` file is correctly formatted and `uv` has access to the AP
 
 ### **7. Additional Resources**
 For more details, refer to:
-- [OpenAI Agents Documentation](https://platform.openai.com/docs/)
+- [OpenAI Agents Documentation](https://openai.github.io/openai-agents-python/)
 - [uv Package Manager](https://github.com/astral-sh/uv)
 
 ---
