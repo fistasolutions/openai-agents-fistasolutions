@@ -117,7 +117,7 @@ dependencies = [
 ]
 
 [package.metadata]
-requires-dist = [{ name = "openai-agents", specifier = ">=0.0.3" }]
+requires-dist = [{ name = "openai-agents", specifier = ">=0.0.4" }]
 
 [[package]]
 name = "httpcore"
@@ -212,7 +212,7 @@ wheels = [
 
 [[package]]
 name = "openai-agents"
-version = "0.0.3"
+version = "0.0.4"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "griffe" },
@@ -222,9 +222,9 @@ dependencies = [
     { name = "types-requests" },
     { name = "typing-extensions" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/15/98/ef4aa3665e1b9ca4fe44ff1e2ed4f3d63b0a4ce1325061aa11f163959f99/openai_agents-0.0.3.tar.gz", hash = "sha256:f0958b94e775aa3b50c00309896fb1a009823c785bc9a6d0a0b853149f5b5ce6", size = 595967 }
+sdist = { url = "https://files.pythonhosted.org/packages/c5/f7/5ae9c34e8381af26ef98c7ef8602a08888c358e2ce0362796a0d134f610d/openai_agents-0.0.4.tar.gz", hash = "sha256:297e8d5faeca753e1b303d860b7ac94d03a7e10382be738163dc6a10a3b7cc1c", size = 599300 }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/10/8f/818e79728ef0f1e372483e6332f7deb9930245f4806aeb28470d2e773cd3/openai_agents-0.0.3-py3-none-any.whl", hash = "sha256:74ac0004e1f95d383863a41ab819cfb4bca9939c67ed74b26a1265a173bfdeb4", size = 75450 },
+    { url = "https://files.pythonhosted.org/packages/8c/ef/c71adf656feb405ad5a2eae8175330db928f64ea1cb3ceb41866645e5034/openai_agents-0.0.4-py3-none-any.whl", hash = "sha256:5577c3ee994fe0bd200d7283e4f7a614b3af19afeebcfb07b6ca6039a8a50a5c", size = 76080 },
 ]
 
 [[package]]
