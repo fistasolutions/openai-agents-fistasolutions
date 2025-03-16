@@ -7,7 +7,7 @@ from typing import Any, Dict, Optional
 load_dotenv()
 
 openai_api_key = os.environ.get("OPENAI_API_KEY")
-
+set_default_openai_key(openai_api_key)
 # Define custom handoff callbacks
 def on_handoff_to_sales(ctx: RunContextWrapper[None]):
     print("\n[SYSTEM] Handoff to Sales Agent initiated")
@@ -119,7 +119,6 @@ main_agent = Agent(
 )
 
 async def main():
-    set_default_openai_key(openai_api_key)
     
     # Example customer inquiries for different scenarios
     sales_inquiry = "I'm interested in buying a new laptop for video editing. What do you recommend?"

@@ -6,6 +6,7 @@ import os
 load_dotenv()
 
 openai_api_key = os.environ.get("OPENAI_API_KEY")
+set_default_openai_key(openai_api_key)
 
 # Create specialized translation agents
 spanish_agent = Agent(
@@ -95,7 +96,6 @@ advanced_assistant = Agent(
 )
 
 async def main():
-    set_default_openai_key(openai_api_key)
     
     print("=== Basic Translation Example ===")
     print("Query: Say 'Hello, how are you?' in Spanish.")

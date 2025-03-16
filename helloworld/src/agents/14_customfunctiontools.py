@@ -11,6 +11,7 @@ import os
 load_dotenv()
 
 openai_api_key = os.environ.get("OPENAI_API_KEY")
+set_default_openai_key(openai_api_key)
 
 # Define a simple function that does some work
 def do_some_work(data: str) -> str:
@@ -126,7 +127,6 @@ def print_tool_schemas():
         print()
 
 async def main():
-    set_default_openai_key(openai_api_key)
     
     # Print tool schemas
     print_tool_schemas()

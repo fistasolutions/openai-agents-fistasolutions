@@ -10,6 +10,7 @@ import os
 load_dotenv()
 
 openai_api_key = os.environ.get("OPENAI_API_KEY")
+set_default_openai_key(openai_api_key)
 
 # Define structured data models for different handoff scenarios
 class EscalationData(BaseModel):
@@ -21,7 +22,7 @@ class CustomerData(BaseModel):
     name: str = Field(..., description="Customer's name")
     account_id: Optional[str] = Field(None, description="Customer's account ID if available")
     issue_category: str = Field(..., description="Category of the customer's issue")
-    is_premium: bool = Field(False, description="Whether the customer has premium status")
+    is_premium: bool = Field(description="Whether the customer has premium status")
 
 class TechnicalIssueData(BaseModel):
     product_name: str = Field(..., description="Name of the product with the issue")
@@ -176,7 +177,6 @@ main_agent = Agent(
 )
 
 async def main():
-    set_default_openai_key(openai_api_key)
     
     # Example customer inquiries for different scenarios
     escalation_inquiry = "I've been trying to resolve an issue with my account for three days and nobody has helped me. I'm extremely frustrated and considering canceling my service. This is unacceptable!"

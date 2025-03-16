@@ -3,11 +3,12 @@ import asyncio
 from dotenv import load_dotenv
 import os
 import time
+from agents import set_default_openai_key
 
 load_dotenv()
 
 openai_api_key = os.environ.get("OPENAI_API_KEY")
-
+set_default_openai_key(openai_api_key)
 # Create agents with different models
 spanish_agent = Agent(
     name="Spanish Agent",
@@ -19,7 +20,7 @@ spanish_agent = Agent(
     If you're asked to speak in another language, politely explain in Spanish
     that you can only communicate in Spanish.
     """,
-    model="o1-mini",  # Using a smaller model for efficiency
+    model="gpt-3.5-turbo",  # Changed from o1-mini to gpt-3.5-turbo
 )
 
 english_agent = Agent(
@@ -127,8 +128,8 @@ async def benchmark_models():
     
     # Models to benchmark
     models = [
-        {"name": "o1-mini", "description": "Smaller, faster model"},
-        {"name": "gpt-3.5-turbo", "description": "Balanced model"},
+        {"name": "gpt-3.5-turbo", "description": "Faster model"},
+        {"name": "gpt-4-turbo", "description": "Balanced model"},
         {"name": "gpt-4o", "description": "More capable model"}
     ]
     
@@ -187,17 +188,20 @@ async def demonstrate_custom_model():
     print("=== Custom Model Configuration ===\n")
     
     # Create an agent with a custom model configuration
+    # Create an OpenAI client with custom parameters
+    custom_client = AsyncOpenAI(
+        api_key=openai_api_key,
+        temperature=0.2,  # Lower temperature for more deterministic responses
+        max_tokens=150,   # Limit response length
+        top_p=0.9,        # Slightly more focused sampling
+    )
+    
     custom_model_agent = Agent(
         name="Custom Model Agent",
         instructions="You are a helpful assistant with custom model settings.",
         model=OpenAIChatCompletionsModel(
             model="gpt-4o",
-            openai_client=AsyncOpenAI(api_key=openai_api_key),
-            model_kwargs={
-                "temperature": 0.2,  # Lower temperature for more deterministic responses
-                "max_tokens": 150,   # Limit response length
-                "top_p": 0.9,        # Slightly more focused sampling
-            }
+            openai_client=custom_client
         ),
     )
     
@@ -227,7 +231,6 @@ async def demonstrate_custom_model():
     print(f"First 150 characters: {result.final_output[:150]}...")
 
 async def main():
-    set_default_openai_key(openai_api_key)
     
     # Demonstrate language detection and handoff
     await demonstrate_language_handoff()

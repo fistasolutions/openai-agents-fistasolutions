@@ -1,14 +1,16 @@
-from dataclasses import dataclass
-from typing import List, Optional, Callable
-from agents import Agent, ModelSettings, function_tool, RunContextWrapper
+from agents import Agent,Runner, ModelSettings, function_tool, RunContextWrapper
 from dotenv import load_dotenv
+from dataclasses import dataclass
+from typing import List
 import asyncio
 import os
 import random
+from agents import set_default_openai_key
 
 load_dotenv()
 
-openai_api_key = os.environ.get("OPENAI_API_KEY")
+api_key = os.environ.get("OPENAI_API_KEY")
+set_default_openai_key(api_key)
 
 # Define the UserContext class
 @dataclass
@@ -96,10 +98,6 @@ dynamic_agent = Agent[UserContext](
 )
 
 async def main():
-    from agents import Runner, set_default_openai_key
-    
-    set_default_openai_key(openai_api_key)
-    
     # Create different user contexts
     beginner_user = UserContext(
         name="Alex",

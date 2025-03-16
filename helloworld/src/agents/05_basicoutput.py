@@ -1,16 +1,17 @@
+from agents import Agent, Runner, ModelSettings
 from pydantic import BaseModel
 from agents import Agent, ModelSettings, function_tool
 from dotenv import load_dotenv
+from agents import set_default_openai_key
 import asyncio
 import os
 from typing import List, Optional
-from datetime import datetime
 
 load_dotenv()
 
-openai_api_key = os.environ.get("OPENAI_API_KEY")
+api_key = os.environ.get("OPENAI_API_KEY")
+set_default_openai_key(api_key)
 
-# Define the structured output model
 class CalendarEvent(BaseModel):
     name: str
     date: str
@@ -18,7 +19,6 @@ class CalendarEvent(BaseModel):
     location: Optional[str] = None
     description: Optional[str] = None
 
-# Create an agent with structured output
 calendar_extractor = Agent(
     name="Calendar Event Extractor",
     instructions="""
@@ -36,7 +36,6 @@ calendar_extractor = Agent(
     output_type=CalendarEvent,
 )
 
-# Helper function to validate extracted dates
 @function_tool
 def validate_date(date_str: str) -> str:
     """Validate and format a date string to YYYY-MM-DD format"""
@@ -53,7 +52,6 @@ def validate_date(date_str: str) -> str:
     except Exception:
         return date_str
 
-# Create a more complex agent that also uses tools
 advanced_calendar_extractor = Agent(
     name="Advanced Calendar Event Extractor",
     instructions="""
@@ -69,14 +67,10 @@ advanced_calendar_extractor = Agent(
     If a detail is not provided in the text, omit that field from your response.
     """,
     output_type=CalendarEvent,
-    tools=[validate_date],
+    tools=[validate_date],   
 )
 
 async def main():
-    from agents import Runner, set_default_openai_key
-    
-    set_default_openai_key(openai_api_key)
-    
     # Example texts with calendar events
     simple_text = "Let's have a team meeting on 2023-05-15 with John, Sarah, and Mike."
     

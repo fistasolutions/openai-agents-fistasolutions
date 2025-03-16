@@ -1,14 +1,15 @@
-from agents import Agent, ModelSettings, function_tool
+from agents import Agent,Runner, ModelSettings, function_tool
 from dotenv import load_dotenv
 import asyncio
 import os
 from typing import List, Optional
+from agents import set_default_openai_key
 
 load_dotenv()
 
-openai_api_key = os.environ.get("OPENAI_API_KEY")
+api_key = os.environ.get("OPENAI_API_KEY")
+set_default_openai_key(api_key)
 
-# Define some helper tools for the specialized agents
 @function_tool
 def get_available_flights(origin: str, destination: str, date: str) -> str:
     """Get available flights between two cities on a specific date"""
@@ -18,32 +19,29 @@ def get_available_flights(origin: str, destination: str, date: str) -> str:
         {"flight": "DL456", "departure": "12:15", "arrival": "14:45", "price": "$329"},
         {"flight": "UA789", "departure": "16:30", "arrival": "19:00", "price": "$279"}
     ]
-    
-    result = f"Available flights from {origin} to {destination} on {date}:\n"
+    result = f"Available flights from {origin} to {destination} on {date}:\n"   
     for flight in flights:
-        result += f"- {flight['flight']}: Departs {flight['departure']}, Arrives {flight['arrival']}, Price: {flight['price']}\n"
+        result += f"{flight['flight']} - {flight['departure']} to {flight['arrival']} - ${flight['price']}\n"
     return result
 
 @function_tool
 def check_refund_eligibility(booking_reference: str) -> str:
-    """Check if a booking is eligible for refund"""
+    """Check if a flight booking is eligible for a refund"""
     # This is a mock implementation
     refund_policies = {
         "ABC123": {"eligible": True, "refund_amount": "$250", "reason": "Cancellation within 24 hours"},
         "DEF456": {"eligible": False, "reason": "Non-refundable fare"},
         "GHI789": {"eligible": True, "refund_amount": "$150", "reason": "Partial refund due to fare rules"}
     }
-    
     if booking_reference in refund_policies:
-        policy = refund_policies[booking_reference]
+        policy = refund_policies[booking_reference] 
         if policy["eligible"]:
-            return f"Booking {booking_reference} is eligible for a refund of {policy['refund_amount']}. Reason: {policy['reason']}"
+            return f"Booking {booking_reference} is eligible for a refund of ${policy['refund_amount']}. The reason for the refund is: {policy['reason']}"
         else:
-            return f"Booking {booking_reference} is not eligible for a refund. Reason: {policy['reason']}"
+            return f"Booking {booking_reference} is not eligible for a refund. The reason is: {policy['reason']}"
     else:
-        return f"Booking reference {booking_reference} not found in our system."
-
-# Create specialized agents
+        return f"Booking {booking_reference} is not found in our records."
+    
 booking_agent = Agent(
     name="Booking Agent",
     instructions="""
@@ -53,9 +51,8 @@ booking_agent = Agent(
     - Destination city
     - Travel date
     - Number of passengers
-    
-    Use the get_available_flights tool to check flight availability.
-    Be friendly and helpful, and try to provide all relevant information about the booking process.
+    - Class of service (economy, business, first class)
+    - Budget (if applicable)
     """,
     tools=[get_available_flights]
 )
@@ -74,7 +71,6 @@ refund_agent = Agent(
     tools=[check_refund_eligibility]
 )
 
-# Create the triage agent that can hand off to specialized agents
 triage_agent = Agent(
     name="Travel Assistant",
     instructions="""
@@ -93,10 +89,6 @@ triage_agent = Agent(
 )
 
 async def main():
-    from agents import Runner, set_default_openai_key
-    
-    set_default_openai_key(openai_api_key)
-    
     # Example conversations
     booking_query = "I need to book a flight from New York to Los Angeles next week"
     refund_query = "I need to cancel my flight and get a refund. My booking reference is ABC123"
@@ -138,3 +130,9 @@ async def main():
 
 if __name__ == "__main__":
     asyncio.run(main()) 
+    
+    
+    
+    
+    
+    

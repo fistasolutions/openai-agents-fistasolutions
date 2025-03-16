@@ -37,19 +37,19 @@ config = RunConfig(
 class EscalationData(BaseModel):
     reason: str = Field(..., description="The reason for escalation")
     priority: str = Field(..., description="Priority level (low, medium, high, urgent)")
-    attempted_solutions: List[str] = Field(default_factory=list, description="Solutions already attempted")
+    attempted_solutions: List[str] = Field([], description="Solutions already attempted")
 
 class CustomerData(BaseModel):
     name: str = Field(..., description="Customer's name")
     account_id: Optional[str] = Field(None, description="Customer's account ID if available")
     issue_category: str = Field(..., description="Category of the customer's issue")
-    is_premium: bool = Field(False, description="Whether the customer has premium status")
+    is_premium: bool = Field(..., description="Whether the customer has premium status")
 
 class TechnicalIssueData(BaseModel):
     product_name: str = Field(..., description="Name of the product with the issue")
     error_code: Optional[str] = Field(None, description="Error code if applicable")
     system_info: Optional[str] = Field(None, description="Customer's system information")
-    steps_to_reproduce: List[str] = Field(default_factory=list, description="Steps to reproduce the issue")
+    steps_to_reproduce: List[str] = Field([], description="Steps to reproduce the issue")
 
 # Define handoff callback functions that use the structured data
 async def on_escalation_handoff(ctx: RunContextWrapper[None], input_data: EscalationData):
@@ -213,23 +213,35 @@ async def main():
     print("=== Escalation Example ===")
     print(f"Customer: {escalation_inquiry}")
     
-    result = await Runner.run(main_agent, input=escalation_inquiry, run_config=config)
-    print("\nFinal Response:")
-    print(result.final_output)
+    try:
+        result = await Runner.run(main_agent, input=escalation_inquiry, run_config=config)
+        print("\nFinal Response:")
+        print(result.final_output)
+    except Exception as e:
+        print(f"\nError: {e}")
+        print("Escalation example failed. Moving to next example.")
     
     print("\n=== Premium Customer Example ===")
     print(f"Customer: {premium_inquiry}")
     
-    result = await Runner.run(main_agent, input=premium_inquiry, run_config=config)
-    print("\nFinal Response:")
-    print(result.final_output)
+    try:
+        result = await Runner.run(main_agent, input=premium_inquiry, run_config=config)
+        print("\nFinal Response:")
+        print(result.final_output)
+    except Exception as e:
+        print(f"\nError: {e}")
+        print("Premium customer example failed. Moving to next example.")
     
     print("\n=== Technical Issue Example ===")
     print(f"Customer: {technical_inquiry}")
     
-    result = await Runner.run(main_agent, input=technical_inquiry, run_config=config)
-    print("\nFinal Response:")
-    print(result.final_output)
+    try:
+        result = await Runner.run(main_agent, input=technical_inquiry, run_config=config)
+        print("\nFinal Response:")
+        print(result.final_output)
+    except Exception as e:
+        print(f"\nError: {e}")
+        print("Technical issue example failed.")
     
     # Interactive mode
     print("\n=== Interactive Customer Service Mode ===")
@@ -241,9 +253,12 @@ async def main():
             break
         
         print("Processing...")
-        result = await Runner.run(main_agent, input=user_input, run_config=config)
-        print("\nFinal Response:")
-        print(result.final_output)
+        try:
+            result = await Runner.run(main_agent, input=user_input, run_config=config)
+            print("\nFinal Response:")
+            print(result.final_output)
+        except Exception as e:
+            print(f"\nError: {e}")
 
 if __name__ == "__main__":
     asyncio.run(main()) 

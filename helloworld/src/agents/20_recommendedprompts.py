@@ -7,6 +7,7 @@ import os
 load_dotenv()
 
 openai_api_key = os.environ.get("OPENAI_API_KEY")
+set_default_openai_key(openai_api_key)
 
 # Create an agent using the recommended prompt prefix
 billing_agent = Agent(
@@ -88,7 +89,6 @@ async def compare_responses(query):
     print(result.final_output)
 
 async def main():
-    set_default_openai_key(openai_api_key)
     
     # Print the recommended prompt prefix for reference
     print("=== Recommended Prompt Prefix ===")

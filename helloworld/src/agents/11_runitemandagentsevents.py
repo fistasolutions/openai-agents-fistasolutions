@@ -7,6 +7,7 @@ import os
 load_dotenv()
 
 openai_api_key = os.environ.get("OPENAI_API_KEY")
+set_default_openai_key(openai_api_key)
 
 # Define a tool that returns a random number of jokes to tell
 @function_tool
@@ -25,7 +26,6 @@ def get_joke_topic() -> str:
     return random.choice(topics)
 
 async def main():
-    set_default_openai_key(openai_api_key)
     
     # Create an agent that will use the tools to determine how many jokes to tell
     agent = Agent(

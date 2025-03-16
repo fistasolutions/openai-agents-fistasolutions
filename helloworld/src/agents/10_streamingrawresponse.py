@@ -9,9 +9,9 @@ import time
 load_dotenv()
 
 openai_api_key = os.environ.get("OPENAI_API_KEY")
+set_default_openai_key(openai_api_key)
 
 async def main():
-    set_default_openai_key(openai_api_key)
     
     # Create a joke-telling agent
     agent = Agent(

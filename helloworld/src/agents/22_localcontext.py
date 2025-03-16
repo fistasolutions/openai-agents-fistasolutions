@@ -10,6 +10,7 @@ import os
 load_dotenv()
 
 openai_api_key = os.environ.get("OPENAI_API_KEY")
+set_default_openai_key(openai_api_key)
 
 # Define a data class to hold user information
 @dataclass
@@ -253,7 +254,6 @@ async def fetch_user_age(wrapper: RunContextWrapper[UserInfo]) -> str:
     return f"User {wrapper.context.name} is 47 years old"
 
 async def main():
-    set_default_openai_key(openai_api_key)
     
     # Run the basic context demo
     await demo_basic_context()

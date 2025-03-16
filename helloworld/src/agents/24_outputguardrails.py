@@ -2,7 +2,14 @@ from pydantic import BaseModel, Field
 from typing import List, Optional, Union
 import asyncio
 import re
+from dotenv import load_dotenv
+import os
+from agents import set_default_openai_key
 
+load_dotenv()
+
+openai_api_key = os.environ.get("OPENAI_API_KEY")
+set_default_openai_key(openai_api_key)
 from agents import (
     Agent,
     GuardrailFunctionOutput,
@@ -12,12 +19,6 @@ from agents import (
     output_guardrail,
     set_default_openai_key
 )
-from dotenv import load_dotenv
-import os
-
-load_dotenv()
-
-openai_api_key = os.environ.get("OPENAI_API_KEY")
 
 # Define output models for the main agent and guardrail checks
 class MessageOutput(BaseModel):
@@ -276,7 +277,6 @@ async def simple_output_guardrail_demo():
         print(f"Message: {e.message}")
 
 async def main():
-    set_default_openai_key(openai_api_key)
     
     # Run the simple output guardrail demo
     await simple_output_guardrail_demo()

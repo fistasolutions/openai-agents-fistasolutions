@@ -1,15 +1,18 @@
-from agents import Agent, ModelSettings, function_tool
+from agents import Agent, Runner, ModelSettings, function_tool
 from dotenv import load_dotenv
+from agents import set_default_openai_key
 import asyncio
 import os
 
 load_dotenv()
 
-openai_api_key = os.environ.get("OPENAI_API_KEY")
+api_key = os.environ.get("OPENAI_API_KEY")
+set_default_openai_key(api_key)
 
 @function_tool
 def get_weather(city: str) -> str:
-    return f"The weather in {city} is sunny"
+    """Get the current weather in a given city"""
+    return f"The weather in {city} is sunny with a temperature of 70 degrees."
 
 weather_haiku_agent = Agent(
     name="Weather Haiku Agent",
@@ -18,13 +21,9 @@ weather_haiku_agent = Agent(
 )
 
 async def main():
-    from agents import Runner, set_default_openai_key
-    
-    set_default_openai_key(openai_api_key)
-    
-    # Example using the weather haiku agent
-    result = await Runner.run(weather_haiku_agent, "Tell me about the weather in Tokyo")
-    print("Weather Haiku result:", result.final_output)
+    result = await Runner.run(weather_haiku_agent, "What is the weather in Tokyo?")
+    print(result.final_output)
 
 if __name__ == "__main__":
     asyncio.run(main())
+    

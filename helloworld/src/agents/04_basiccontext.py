@@ -1,23 +1,23 @@
 from dataclasses import dataclass
 from typing import List, Optional
-from agents import Agent, ModelSettings, function_tool
+from agents import Agent, Runner, ModelSettings, function_tool
+from agents import set_default_openai_key
 from dotenv import load_dotenv
 import asyncio
 import os
 
 load_dotenv()
+api_key = os.environ.get("OPENAI_API_KEY")
+set_default_openai_key(api_key)
 
-openai_api_key = os.environ.get("OPENAI_API_KEY")
-
-# Define the Purchase class
 @dataclass
 class Purchase:
     id: str
     name: str
     price: float
     date: str
-
-# Define the UserContext class
+    
+    
 @dataclass
 class UserContext:
     uid: str
@@ -32,8 +32,6 @@ class UserContext:
                 Purchase(id="p2", name="Premium Add-on", price=4.99, date="2023-02-20")
             ]
         return []
-
-# Define tools that use the context
 @function_tool
 async def get_user_info(context: UserContext) -> str:
     """Get basic information about the current user"""
@@ -71,11 +69,7 @@ user_context_agent = Agent[UserContext](
     tools=[get_user_info, get_purchase_history, get_personalized_greeting],
 )
 
-async def main():
-    from agents import Runner, set_default_openai_key
-    
-    set_default_openai_key(openai_api_key)
-    
+async def main():    
     # Create a sample user context
     pro_user_context = UserContext(uid="user123", is_pro_user=True)
     free_user_context = UserContext(uid="user456", is_pro_user=False)

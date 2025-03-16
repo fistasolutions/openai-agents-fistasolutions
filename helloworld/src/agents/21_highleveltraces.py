@@ -8,6 +8,7 @@ import random
 load_dotenv()
 
 openai_api_key = os.environ.get("OPENAI_API_KEY")
+set_default_openai_key(openai_api_key)
 
 # Create specialized agents for different tasks
 joke_agent = Agent(
@@ -185,7 +186,6 @@ async def nested_trace_demo():
         print("Customer interaction completed")
 
 async def main():
-    set_default_openai_key(openai_api_key)
     
     # Demonstrate a simple trace
     await simple_trace_demo()

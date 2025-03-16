@@ -3,15 +3,13 @@ from dotenv import load_dotenv
 import asyncio
 import os
 import uuid
-
+from agents import Runner, set_default_openai_key
 load_dotenv()
 
 openai_api_key = os.environ.get("OPENAI_API_KEY")
+set_default_openai_key(openai_api_key)
 
 async def main():
-    from agents import Runner, set_default_openai_key
-    
-    set_default_openai_key(openai_api_key)
     
     # Create a simple agent with concise instructions
     agent = Agent(

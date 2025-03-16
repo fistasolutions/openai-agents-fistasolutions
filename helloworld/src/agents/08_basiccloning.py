@@ -1,11 +1,13 @@
-from agents import Agent, ModelSettings, function_tool
+from agents import Agent,Runner, ModelSettings, function_tool
 from dotenv import load_dotenv
 import asyncio
 import os
+from agents import set_default_openai_key
 
 load_dotenv()
 
-openai_api_key = os.environ.get("OPENAI_API_KEY")
+api_key = os.environ.get("OPENAI_API_KEY")
+set_default_openai_key(api_key)
 
 # Define some helper tools
 @function_tool
@@ -89,11 +91,8 @@ emoji_pirate_agent = pirate_agent.clone(
     tools=[translate_to_emoji],
 )
 
+
 async def main():
-    from agents import Runner, set_default_openai_key
-    
-    set_default_openai_key(openai_api_key)
-    
     runner = Runner()
     
     # Test query to demonstrate different agent personalities

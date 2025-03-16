@@ -2,10 +2,11 @@ from agents import Agent, Runner, handoff, set_default_openai_key
 import asyncio
 from dotenv import load_dotenv
 import os
-
+from agents import set_default_openai_key
 load_dotenv()
 
 openai_api_key = os.environ.get("OPENAI_API_KEY")
+set_default_openai_key(openai_api_key)
 
 # Create specialized agents for different customer service functions
 billing_agent = Agent(
@@ -84,7 +85,6 @@ triage_agent = Agent(
 )
 
 async def main():
-    set_default_openai_key(openai_api_key)
     
     # Example customer inquiries for different scenarios
     billing_inquiry = "I'm confused about the charges on my last bill. There's an extra $20 fee I don't recognize."

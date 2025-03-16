@@ -8,6 +8,7 @@ import os
 load_dotenv()
 
 openai_api_key = os.environ.get("OPENAI_API_KEY")
+set_default_openai_key(openai_api_key)
 
 # Define a custom type for location
 class Location(TypedDict):
@@ -102,7 +103,6 @@ def print_tool_info():
             print()
 
 async def main():
-    set_default_openai_key(openai_api_key)
     
     # Print tool information
     print_tool_info()
