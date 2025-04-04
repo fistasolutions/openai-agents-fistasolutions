@@ -1,5 +1,5 @@
 [project]
-name = "helloworld"
+name = "openaiagentssdk"
 version = "0.1.0"
 description = "Add your description here"
 readme = "README.md"
@@ -8,14 +8,12 @@ authors = [
 ]
 requires-python = ">=3.12"
 dependencies = [
-    "numpy>=2.2.4",
-    "openai-agents[voice]>=0.0.3",
-    "python-dotenv>=1.0.1",
-    "sounddevice>=0.5.1",
+    "dotenv>=0.9.9",
+    "openai-agents>=0.0.7",
 ]
 
 [project.scripts]
-helloworld = "helloworld:main"
+openaiagentssdk = "openaiagentssdk:main"
 
 [build-system]
 requires = ["hatchling"]
