@@ -1,8 +1,8 @@
-from agentswithopenai import Agent,Runner, ModelSettings, function_tool
+from agents import Agent,Runner, ModelSettings, function_tool
 from dotenv import load_dotenv
 import asyncio
 import os
-from agentswithopenai import set_default_openai_key
+from agents import set_default_openai_key
 
 load_dotenv()
 

@@ -3,7 +3,7 @@ from typing import Optional, List
 import asyncio
 import json
 
-from agentswithopenai import Agent, handoff, RunContextWrapper, Runner, set_default_openai_key
+from agents import Agent, handoff, RunContextWrapper, Runner, set_default_openai_key
 from dotenv import load_dotenv
 import os
 
@@ -106,15 +106,15 @@ technical_agent = Agent(
     Your responsibilities:
     1. Solve complex technical issues that require specialized knowledge
     2. Provide detailed technical explanations and guidance
-    3. Troubleshoot difficult problems methodically
-    4. Recommend appropriate technical solutions
+    3. Troubleshoot difficult problems with systematic approaches
+    4. Recommend advanced solutions and workarounds
     5. Document technical issues for product improvement
     
-    Be thorough, precise, and patient in your technical assistance.
+    Be thorough, precise, and methodical in your approach to technical problems.
     """,
 )
 
-# Create handoff objects with structured data inputs
+# Create handoff objects with structured input types
 escalation_handoff = handoff(
     agent=escalation_agent,
     on_handoff=on_escalation_handoff,

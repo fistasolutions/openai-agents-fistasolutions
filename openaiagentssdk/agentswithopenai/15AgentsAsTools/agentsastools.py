@@ -1,4 +1,4 @@
-from agentswithopenai import Agent, Runner, set_default_openai_key
+from agents import Agent, Runner, set_default_openai_key
 import asyncio
 from dotenv import load_dotenv
 import os

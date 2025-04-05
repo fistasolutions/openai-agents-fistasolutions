@@ -1,4 +1,4 @@
-from agentswithopenai import Agent, Runner, trace, set_default_openai_key
+from agents import Agent, Runner, trace, set_default_openai_key
 import asyncio
 from dotenv import load_dotenv
 import os
@@ -48,120 +48,121 @@ rating_agent = Agent(
 improvement_agent = Agent(
     name="Joke Improver",
     instructions="""
-    You are a joke improvement specialist. Your job is to take existing jokes and make them funnier.
+    You are a joke improvement specialist. Your job is to take an existing joke and make it funnier.
     
-    When improving jokes:
-    - Sharpen the punchline
-    - Improve the setup if needed
-    - Enhance wordplay or puns
-    - Make the joke more concise
-    - Preserve the original concept
+    Ways to improve jokes:
+    - Tighten the wording for better delivery
+    - Enhance the punchline for more impact
+    - Add a clever twist or unexpected element
+    - Improve the setup to better lead to the punchline
+    - Fix any issues with timing or structure
     
-    Provide both the improved joke and a brief explanation of what you changed.
+    Provide both the improved joke and a brief explanation of what you changed and why.
     """,
 )
 
-# Simple trace demonstration
-async def simple_trace_demo():
-    print("=== Simple Trace Demo ===")
-    
-    with trace(workflow_name="Simple Workflow"):
-        print("Starting simple workflow")
-        
-        # Simulate some work
-        print("Performing step 1")
-        await asyncio.sleep(0.5)
-        
-        print("Performing step 2")
-        await asyncio.sleep(0.5)
-        
-        print("Workflow complete")
-
-# Nested trace demonstration
-async def nested_trace_demo():
-    print("\n=== Nested Trace Demo ===")
-    
-    with trace(workflow_name="Parent Workflow"):
-        print("Starting parent workflow")
-        
-        with trace(workflow_name="Child Workflow 1"):
-            print("Starting child workflow 1")
-            await asyncio.sleep(0.5)
-            print("Child workflow 1 complete")
-        
-        with trace(workflow_name="Child Workflow 2"):
-            print("Starting child workflow 2")
-            
-            with trace(workflow_name="Grandchild Workflow"):
-                print("Starting grandchild workflow")
-                await asyncio.sleep(0.5)
-                print("Grandchild workflow complete")
-            
-            print("Child workflow 2 complete")
-        
-        print("Parent workflow complete")
-
-# Full joke workshop with traces
+# Function to simulate a joke workshop process
 async def joke_workshop(topic):
-    print(f"\n=== Joke Workshop: {topic} ===")
+    print(f"\n=== Starting Joke Workshop on '{topic}' ===\n")
     
-    with trace(workflow_name=f"Joke Workshop - {topic}", group_id=f"joke-{topic}"):
-        print(f"Starting joke workshop for topic: {topic}")
+    # Use a trace to group all the steps in the joke workshop process
+    with trace(f"Joke Workshop: {topic}"):
+        # Step 1: Generate initial jokes
+        print("Step 1: Generating initial jokes...")
+        jokes = []
         
-        # Step 1: Generate a joke
-        with trace(workflow_name="Joke Generation"):
-            print("Generating joke...")
-            result = await Runner.run(joke_agent, f"Create a funny joke about {topic}")
-            joke = result.final_output
-            print(f"Generated joke: {joke}")
+        # Generate 3 different jokes on the topic
+        for i in range(3):
+            with trace(f"Generate Joke #{i+1}"):
+                result = await Runner.run(joke_agent, f"Create a funny joke about {topic}. Make it original and clever.")
+                jokes.append(result.final_output)
+                print(f"Joke #{i+1}: {result.final_output}")
+                # Add a small delay to simulate processing time
+                time.sleep(0.5)
         
-        # Step 2: Evaluate the joke
-        with trace(workflow_name="Joke Evaluation"):
-            print("Evaluating joke...")
-            result = await Runner.run(rating_agent, f"Rate this joke: {joke}")
-            evaluation = result.final_output
-            print(f"Evaluation: {evaluation}")
-            
-            # Extract rating for decision making
+        # Step 2: Rate each joke
+        print("\nStep 2: Rating jokes...")
+        ratings = []
+        
+        for i, joke in enumerate(jokes):
+            with trace(f"Rate Joke #{i+1}"):
+                result = await Runner.run(rating_agent, f"Please rate this joke about {topic}: \"{joke}\"")
+                ratings.append(result.final_output)
+                print(f"Rating for Joke #{i+1}: {result.final_output}")
+                time.sleep(0.5)
+        
+        # Step 3: Improve the best joke
+        print("\nStep 3: Improving the best joke...")
+        
+        # Find the joke with the highest rating (simple parsing)
+        best_joke_index = 0
+        highest_rating = 0
+        
+        for i, rating in enumerate(ratings):
             try:
-                rating_line = evaluation.split('\n')[0]
-                rating = int(rating_line.split(':')[1].strip())
+                # Extract the numeric rating (assuming format "Rating: [1-10]")
+                rating_value = int(rating.split("Rating:")[1].split("\n")[0].strip())
+                if rating_value > highest_rating:
+                    highest_rating = rating_value
+                    best_joke_index = i
             except:
-                rating = 5  # Default if we can't parse
+                # If parsing fails, just continue
+                continue
         
-        # Step 3: Improve the joke if needed
-        if rating < 7:
-            with trace(workflow_name="Joke Improvement"):
-                print(f"Rating {rating} is below threshold, improving joke...")
-                result = await Runner.run(
-                    improvement_agent, 
-                    f"Please improve this joke: {joke}\n\nEvaluation: {evaluation}"
-                )
-                improved_joke = result.final_output
-                print(f"Improved joke: {improved_joke}")
-                
-                # Optionally re-evaluate the improved joke
-                with trace(workflow_name="Re-evaluation"):
-                    print("Re-evaluating improved joke...")
-                    result = await Runner.run(rating_agent, f"Rate this joke: {improved_joke}")
-                    new_evaluation = result.final_output
-                    print(f"New evaluation: {new_evaluation}")
-        else:
-            print(f"Rating {rating} is good, no improvement needed")
+        best_joke = jokes[best_joke_index]
+        print(f"Best joke selected: {best_joke}")
         
-        print(f"Joke workshop for {topic} complete")
+        with trace("Improve Best Joke"):
+            result = await Runner.run(
+                improvement_agent, 
+                f"Please improve this joke about {topic}: \"{best_joke}\". Make it funnier while keeping its essence."
+            )
+            improved_joke = result.final_output
+            print(f"\nImproved joke: {improved_joke}")
+        
+        # Step 4: Final rating of the improved joke
+        print("\nStep 4: Rating the improved joke...")
+        
+        with trace("Rate Improved Joke"):
+            result = await Runner.run(rating_agent, f"Please rate this improved joke about {topic}: \"{improved_joke}\"")
+            final_rating = result.final_output
+            print(f"Final rating: {final_rating}")
+        
+        # Return the final results
+        return {
+            "topic": topic,
+            "original_jokes": jokes,
+            "ratings": ratings,
+            "best_original_joke": best_joke,
+            "improved_joke": improved_joke,
+            "final_rating": final_rating
+        }
 
-# Simulate a customer interaction with traces
-async def customer_interaction_demo():
-    print("\n=== Customer Interaction Demo ===")
+# Function to demonstrate a simple trace
+async def simple_trace_demo():
+    print("=== Simple Trace Demo ===\n")
     
-    with trace(workflow_name="Customer Interaction"):
-        print("Customer interaction started")
+    with trace("Simple Joke Workflow"):
+        print("Generating a joke...")
+        first_result = await Runner.run(joke_agent, "Tell me a joke about programming")
         
-        with trace("Customer Identification"):
-            print("Identifying customer...")
+        print("Rating the joke...")
+        second_result = await Runner.run(rating_agent, f"Rate this joke: {first_result.final_output}")
+        
+        print(f"\nJoke: {first_result.final_output}")
+        print(f"Rating: {second_result.final_output}")
+
+# Function to demonstrate nested traces
+async def nested_trace_demo():
+    print("\n=== Nested Trace Demo ===\n")
+    
+    with trace("Customer Interaction"):
+        print("Starting customer interaction...")
+        
+        with trace("Initial Greeting"):
+            print("Greeting the customer...")
             time.sleep(0.5)
-            print("Customer identified")
+            print("Customer greeted successfully")
         
         with trace("Joke Request"):
             print("Customer requested a joke...")

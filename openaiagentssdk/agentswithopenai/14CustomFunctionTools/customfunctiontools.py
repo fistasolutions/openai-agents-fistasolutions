@@ -4,7 +4,7 @@ from typing import Any, Dict, List, Optional
 
 from pydantic import BaseModel, Field
 
-from agentswithopenai import Agent, RunContextWrapper, FunctionTool, Runner, set_default_openai_key
+from agents import Agent, RunContextWrapper, FunctionTool, Runner, set_default_openai_key
 from dotenv import load_dotenv
 import os
 

@@ -1,4 +1,4 @@
-from agentswithopenai import Agent, FileSearchTool, Runner, WebSearchTool, set_default_openai_key
+from agents import Agent, FileSearchTool, Runner, WebSearchTool, set_default_openai_key
 from dotenv import load_dotenv
 import os
 import asyncio

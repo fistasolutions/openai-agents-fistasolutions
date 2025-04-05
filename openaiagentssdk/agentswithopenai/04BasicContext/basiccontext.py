@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from typing import List, Optional
-from agentswithopenai import Agent, Runner, ModelSettings, function_tool
-from agentswithopenai import set_default_openai_key
+from agents import Agent, Runner, ModelSettings, function_tool
+from agents import set_default_openai_key
 from dotenv import load_dotenv
 import asyncio
 import os

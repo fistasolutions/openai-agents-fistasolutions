@@ -1,7 +1,7 @@
 import json
 import asyncio
 from typing_extensions import TypedDict, Any
-from agentswithopenai import Agent, FunctionTool, RunContextWrapper, function_tool, set_default_openai_key
+from agents import Agent, FunctionTool, RunContextWrapper, function_tool, set_default_openai_key
 from dotenv import load_dotenv
 import os
 
@@ -115,7 +115,7 @@ async def main():
     ]
     
     # Run the agent with each query
-    from agentswithopenai import Runner
+    from agents import Runner
     
     for i, query in enumerate(queries):
         print(f"\n=== Query {i+1}: {query} ===")

@@ -7,8 +7,9 @@ Now, let's go step by step!
 
 ## Step 1: Setting Up the Magic Key 🗝️
 ```python
-from agentswithopenai import Agent, Runner, ModelSettings, function_tool
+from agents import Agent, Runner, ModelSettings, function_tool
 from dotenv import load_dotenv
+from agents import set_default_openai_key
 import asyncio
 import os
 
@@ -18,7 +19,7 @@ set_default_openai_key(api_key)
 ```
 The AI assistant needs a magic key (API key) to work properly.
 
-This code finds the magic key hidden in a secret file (.env) and unlocks it.
+This code finds the OpenAI API key hidden in a secret file (.env), unlocks it, and sets it as the default key for our agents.
 
 ## Step 2: Creating a Weather Tool 🌦️
 ```python
@@ -72,9 +73,12 @@ This starts the whole program and runs the example.
 ## Try It Yourself! 🚀
 1. Install the required packages:
    ```
-   uv add openai-agents dotenv
+   uv add openai-agents python-dotenv
    ```
-2. Create a `.env` file with your API key
+2. Create a `.env` file with your OpenAI API key:
+   ```
+   OPENAI_API_KEY=your_api_key_here
+   ```
 3. Run the program:
    ```
    uv run basicconfig.py
@@ -85,5 +89,6 @@ This starts the whole program and runs the example.
 - How to create function tools for your agents
 - How to configure agents with specific instructions
 - How to run agents asynchronously
+- How to use the OpenAI API with the agents SDK
 
 Happy coding! 🎉 

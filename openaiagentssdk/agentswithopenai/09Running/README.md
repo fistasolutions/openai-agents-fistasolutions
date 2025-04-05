@@ -7,20 +7,21 @@ Now, let's go step by step!
 
 ## Step 1: Setting Up the Magic Key 🗝️
 ```python
-from agentswithopenai import Agent, ModelSettings, function_tool, trace
+from agents import Agent, ModelSettings, function_tool, trace
 from dotenv import load_dotenv
 import asyncio
 import os
 import uuid
-from agentswithopenai import Runner, set_default_openai_key
+from agents import Runner, set_default_openai_key
 
 load_dotenv()
+
 openai_api_key = os.environ.get("OPENAI_API_KEY")
 set_default_openai_key(openai_api_key)
 ```
 The AI assistant needs a magic key (API key) to work properly.
 
-This code finds the magic key hidden in a secret file (.env) and unlocks it.
+This code finds the OpenAI API key hidden in a secret file (.env), unlocks it, and sets it as the default key for our agents.
 
 ## Step 2: Creating a Concise AI Assistant 🤖
 ```python
@@ -40,18 +41,25 @@ This creates a unique ID for our conversation, like putting a label on a specifi
 ## Step 4: Starting a Traced Conversation 🔍
 ```python
 with trace(workflow_name="Conversation", group_id=thread_id):
+    print("\n--- First Turn ---")
     # First turn
     result = await Runner.run(agent, "What city is the Golden Gate Bridge in?")
+    print("User: What city is the Golden Gate Bridge in?")
     print(f"Assistant: {result.final_output}")
     
+    print("\n--- Second Turn ---")
     # Second turn - using the conversation history
     new_input = result.to_input_list() + [{"role": "user", "content": "What state is it in?"}]
     result = await Runner.run(agent, new_input)
+    print("User: What state is it in?")
     print(f"Assistant: {result.final_output}")
     
+    print("\n--- Third Turn ---")
     # Third turn - continuing the conversation
     new_input = result.to_input_list() + [{"role": "user", "content": "When was it built?"}]
     result = await Runner.run(agent, new_input)
+    print("User: When was it built?")
+    print(f"Assistant: {result.final_output}")
 ```
 This creates a three-turn conversation where:
 1. We ask about the Golden Gate Bridge's city
@@ -63,19 +71,27 @@ The AI remembers the context from previous turns, so it knows we're still talkin
 ## Step 5: Starting a New Conversation 🆕
 ```python
 new_thread_id = str(uuid.uuid4())
-
+    
 with trace(workflow_name="New Conversation", group_id=new_thread_id):
+    print("\n--- New Conversation ---")
     # First turn of new conversation
     result = await Runner.run(agent, "Tell me about the Eiffel Tower")
+    print("User: Tell me about the Eiffel Tower")
+    print(f"Assistant: {result.final_output}")
     
     # Second turn of new conversation
     new_input = result.to_input_list() + [{"role": "user", "content": "How tall is it?"}]
     result = await Runner.run(agent, new_input)
+    print("User: How tall is it?")
+    print(f"Assistant: {result.final_output}")
 ```
 This starts a completely new conversation about the Eiffel Tower, separate from our bridge conversation.
 
 ## Step 6: Creating an Interactive Mode 💬
 ```python
+print("\n--- Interactive Mode ---")
+print("Type 'exit' to quit or 'new' to start a new conversation")
+
 interactive_thread_id = str(uuid.uuid4())
 conversation_history = None
 
@@ -87,6 +103,7 @@ with trace(workflow_name="Interactive Conversation", group_id=interactive_thread
         elif user_input.lower() == 'new':
             print("Starting a new conversation")
             conversation_history = None
+            interactive_thread_id = str(uuid.uuid4())
             continue
         
         if conversation_history is None:
@@ -103,7 +120,7 @@ with trace(workflow_name="Interactive Conversation", group_id=interactive_thread
 This creates an interactive chat where:
 - You can type messages and get responses
 - The AI remembers the conversation context
-- You can type "new" to start a fresh conversation
+- You can type "new" to start a fresh conversation with a new thread ID
 - You can type "exit" to quit
 
 ## Final Summary 📌
@@ -116,9 +133,12 @@ This creates an interactive chat where:
 ## Try It Yourself! 🚀
 1. Install the required packages:
    ```
-   uv add openai-agents dotenv
+   uv add openai-agents python-dotenv
    ```
-2. Create a `.env` file with your API key
+2. Create a `.env` file with your OpenAI API key:
+   ```
+   OPENAI_API_KEY=your_api_key_here
+   ```
 3. Run the program:
    ```
    uv run running.py
@@ -126,9 +146,10 @@ This creates an interactive chat where:
 4. Try having multi-turn conversations about different topics!
 
 ## What You'll Learn 🧠
-- How to maintain conversation history
-- How to use tracing to monitor conversations
-- How to start new conversations
-- How to build an interactive chat interface
+- How to maintain conversation history with to_input_list()
+- How to use tracing to monitor and organize conversations
+- How to create unique thread IDs for different conversations
+- How to build an interactive chat interface with memory
+- How to handle multi-turn conversations where context is maintained
 
 Happy coding! 🎉 

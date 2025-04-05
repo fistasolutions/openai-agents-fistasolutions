@@ -1,8 +1,8 @@
-from agentswithopenai import Agent, Runner, ModelSettings
+from agents import Agent, Runner, ModelSettings
 from pydantic import BaseModel
-from agentswithopenai import Agent, ModelSettings, function_tool
+from agents import Agent, ModelSettings, function_tool
 from dotenv import load_dotenv
-from agentswithopenai import set_default_openai_key
+from agents import set_default_openai_key
 import asyncio
 import os
 from typing import List, Optional

@@ -1,204 +1,264 @@
-# 🛡️ Customizing Guardrails Example
+# 🔄 Customizing Handoffs Example
 
 ## What This Code Does (Big Picture)
-Imagine teaching your robot friend what questions it should and shouldn't answer! This code shows how to create custom safety rules (guardrails) that check user inputs before the AI responds, making sure it only answers appropriate questions.
+Imagine having a customer service system where you can customize exactly how customers are transferred between departments! This code shows how to create enhanced handoffs with custom callbacks, tool name overrides, and detailed descriptions to create a more professional customer service experience.
 
 Now, let's go step by step!
 
 ## Step 1: Setting Up the Magic Key 🗝️
 ```python
-from agentswithopenai import Agent, Runner, GuardrailFunctionOutput, InputGuardrail, set_default_openai_key
-from pydantic import BaseModel
-from dotenv import load_dotenv
+from agents import Agent, handoff, RunContextWrapper, Runner, set_default_openai_key
 import asyncio
+from dotenv import load_dotenv
 import os
-import re
+from typing import Any, Dict, Optional
 
 load_dotenv()
+
 openai_api_key = os.environ.get("OPENAI_API_KEY")
 set_default_openai_key(openai_api_key)
 ```
-The AI assistant needs a magic key (API key) to work properly.
+The AI assistants need a magic key (API key) to work properly.
 
-This code finds the magic key hidden in a secret file (.env) and unlocks it.
+This code finds the OpenAI API key hidden in a secret file (.env), unlocks it, and sets it as the default key for our agents.
 
-## Step 2: Creating a Profanity Checker Function 🚫
+## Step 2: Creating Custom Handoff Callbacks 📞
 ```python
-def contains_profanity(text: str) -> bool:
-    """Check if text contains any profanity"""
-    # This is a simple example - in a real application, you would use a more comprehensive list
-    # or a specialized library for profanity detection
-    profanity_list = ["badword1", "badword2", "badword3"]
-    
-    text_lower = text.lower()
-    for word in profanity_list:
-        if word in text_lower:
-            return True
-    
-    return False
+# Define custom handoff callbacks
+def on_handoff_to_sales(ctx: RunContextWrapper[None]):
+    print("\n[SYSTEM] Handoff to Sales Agent initiated")
+    print("[SYSTEM] Logging customer information for sales follow-up")
+    print("[SYSTEM] Preparing sales materials based on customer inquiry")
+
+def on_handoff_to_support(ctx: RunContextWrapper[None]):
+    print("\n[SYSTEM] Handoff to Support Agent initiated")
+    print("[SYSTEM] Retrieving customer support history")
+    print("[SYSTEM] Preparing troubleshooting resources")
+
+def on_handoff_to_specialist(ctx: RunContextWrapper[None]):
+    print("\n[SYSTEM] Handoff to Product Specialist initiated")
+    print("[SYSTEM] Loading product documentation and specifications")
+    print("[SYSTEM] Checking inventory and availability")
 ```
-This function:
-- Takes text as input
-- Checks if it contains any words from a profanity list
-- Returns True if profanity is found
+These functions:
+- Are triggered when a handoff occurs
+- Receive a context object with information about the handoff
+- Perform special actions like logging information or preparing resources
+- Display system messages to show what's happening behind the scenes
 
-## Step 3: Creating a Personal Information Detector 🔒
+## Step 3: Creating Specialized Agents 👨‍💼👩‍💻👨‍🔧
 ```python
-def contains_personal_info(text: str) -> bool:
-    """Check if text contains patterns that look like personal information"""
-    # Check for patterns that look like:
-    # - Social Security Numbers (XXX-XX-XXXX)
-    # - Credit Card Numbers (XXXX-XXXX-XXXX-XXXX)
-    # - Phone Numbers (XXX-XXX-XXXX)
-    
-    # Social Security Number pattern
-    ssn_pattern = r"\b\d{3}-\d{2}-\d{4}\b"
-    # Credit Card Number pattern
-    cc_pattern = r"\b\d{4}[- ]?\d{4}[- ]?\d{4}[- ]?\d{4}\b"
-    # Phone Number pattern
-    phone_pattern = r"\b\d{3}[- ]?\d{3}[- ]?\d{4}\b"
-    
-    if re.search(ssn_pattern, text) or re.search(cc_pattern, text) or re.search(phone_pattern, text):
-        return True
-    
-    return False
-```
-This function:
-- Takes text as input
-- Uses regular expressions to look for patterns like SSNs, credit card numbers, and phone numbers
-- Returns True if any personal information is detected
-
-## Step 4: Creating a Custom Guardrail Function 🛡️
-```python
-async def content_safety_guardrail(ctx, agent, input_data):
-    """Check if input contains profanity or personal information"""
-    # Check for profanity
-    if contains_profanity(input_data):
-        return GuardrailFunctionOutput(
-            output_info={
-                "reason": "The input contains inappropriate language.",
-                "suggestion": "Please rephrase your question without using profanity."
-            },
-            tripwire_triggered=True
-        )
-    
-    # Check for personal information
-    if contains_personal_info(input_data):
-        return GuardrailFunctionOutput(
-            output_info={
-                "reason": "The input appears to contain personal information.",
-                "suggestion": "For your security, please don't share personal information like SSNs, credit card numbers, or phone numbers."
-            },
-            tripwire_triggered=True
-        )
-    
-    # If no issues found, allow the input to proceed
-    return GuardrailFunctionOutput(
-        output_info={"status": "Input passed safety checks"},
-        tripwire_triggered=False
-    )
-```
-This function:
-- Takes user input and checks it for safety issues
-- Uses our profanity and personal information detectors
-- Returns a helpful message if problems are found
-- Sets tripwire_triggered=True to block unsafe inputs
-
-## Step 5: Creating a Safe Assistant with Guardrails 🤖
-```python
-safe_assistant = Agent(
-    name="Safe Assistant",
+# Create specialized agents
+sales_agent = Agent(
+    name="Sales Agent",
     instructions="""
-    You are a helpful assistant that provides information and assistance on a wide range of topics.
-    You are designed to be safe and respectful in all interactions.
+    You are a specialized sales agent. Your role is to:
+    
+    1. Help customers find the right products for their needs
+    2. Provide pricing information and available discounts
+    3. Explain product features and benefits
+    4. Assist with placing orders
+    5. Answer questions about shipping and delivery
+    
+    Be enthusiastic, helpful, and knowledgeable about our product offerings.
+    Focus on understanding customer needs and recommending appropriate solutions.
     """,
-    input_guardrails=[
-        InputGuardrail(guardrail_function=content_safety_guardrail),
-    ]
+)
+
+support_agent = Agent(
+    name="Support Agent",
+    instructions="""
+    You are a specialized technical support agent. Your role is to:
+    
+    1. Help customers troubleshoot issues with their products
+    2. Provide step-by-step guidance for resolving problems
+    3. Explain how to use product features
+    4. Assist with software updates and installations
+    5. Document issues for further follow-up if needed
+    
+    Be patient, clear, and thorough in your explanations.
+    Focus on resolving the customer's issue efficiently and effectively.
+    """,
+)
+
+product_specialist = Agent(
+    name="Product Specialist",
+    instructions="""
+    You are a specialized product expert. Your role is to:
+    
+    1. Provide in-depth information about specific products
+    2. Compare different product models and their features
+    3. Explain technical specifications and compatibility
+    4. Offer advice on product accessories and add-ons
+    5. Share best practices for product use and maintenance
+    
+    Be detailed, accurate, and passionate about our products.
+    Focus on helping customers understand the full capabilities of our offerings.
+    """,
 )
 ```
-This creates an AI assistant that:
-- Helps with a wide range of topics
-- Uses our custom guardrail function to check all inputs
-- Will only respond if the input passes safety checks
+This creates three specialized agents:
+- A sales agent who helps with product selection and purchasing
+- A support agent who helps troubleshoot technical issues
+- A product specialist who provides detailed product information
 
-## Step 6: Running the Program with Different Inputs 🏃‍♂️
+## Step 4: Creating Enhanced Handoff Objects 🔄
 ```python
-async def main():
-    # Test with different types of inputs
-    safe_query = "What is the capital of France?"
-    profanity_query = "Tell me about badword1 and why people use it"
-    personal_info_query = "My credit card number is 1234-5678-9012-3456, is it secure?"
-    
-    # Run the safe assistant with each query
-    print("\n--- Safe Query ---")
-    result = await Runner.run(safe_assistant, safe_query)
-    print(result.final_output)
-    
-    print("\n--- Profanity Query ---")
-    try:
-        result = await Runner.run(safe_assistant, profanity_query)
-        print(result.final_output)
-    except Exception as e:
-        print(f"Guardrail triggered: {str(e)}")
-    
-    print("\n--- Personal Info Query ---")
-    try:
-        result = await Runner.run(safe_assistant, personal_info_query)
-        print(result.final_output)
-    except Exception as e:
-        print(f"Guardrail triggered: {str(e)}")
+# Create custom handoff objects with callbacks and overrides
+sales_handoff = handoff(
+    agent=sales_agent,
+    on_handoff=on_handoff_to_sales,
+    tool_name_override="transfer_to_sales_team",
+    tool_description_override="Transfer the customer to our sales team for assistance with product selection, pricing, and purchasing.",
+)
+
+support_handoff = handoff(
+    agent=support_agent,
+    on_handoff=on_handoff_to_support,
+    tool_name_override="connect_with_technical_support",
+    tool_description_override="Connect the customer with our technical support team for help with troubleshooting and product issues.",
+)
+
+specialist_handoff = handoff(
+    agent=product_specialist,
+    on_handoff=on_handoff_to_specialist,
+    tool_name_override="consult_product_specialist",
+    tool_description_override="Arrange a consultation with a product specialist for detailed product information and expert advice.",
+)
 ```
-This tests the system with different types of inputs:
-1. A safe question (should be answered normally)
-2. A question with profanity (should be blocked)
-3. A message with personal information (should be blocked)
+This creates enhanced handoff objects that:
+- Connect to the specialized agents
+- Include custom callback functions to run when handoffs occur
+- Use professional tool names instead of default agent names
+- Provide detailed descriptions of what each handoff does
 
-## Step 7: Creating an Interactive Mode with Feedback 💬
+## Step 5: Creating a Main Agent with Enhanced Handoffs 🤖
 ```python
-print("\n--- Interactive Mode ---")
+# Create a main agent that can hand off to specialized agents
+main_agent = Agent(
+    name="Customer Service Agent",
+    instructions="""
+    You are the primary customer service agent. Your role is to:
+    
+    1. Greet customers and understand their initial needs
+    2. Handle general inquiries and simple questions
+    3. Direct customers to the appropriate specialized agent when needed:
+       - Sales Team: For product selection, pricing, and purchasing
+       - Technical Support: For troubleshooting and product issues
+       - Product Specialist: For detailed product information and expert advice
+    
+    Before transferring a customer, briefly explain why you're connecting them with a specialist
+    and what they can expect from the handoff.
+    """,
+    handoffs=[
+        sales_handoff,
+        support_handoff,
+        specialist_handoff,
+    ],
+)
+```
+This creates a main customer service agent that:
+- Handles general inquiries
+- Uses our enhanced handoff objects to transfer customers
+- Explains the handoff process to customers
+
+## Step 6: Testing with Different Customer Inquiries 🧪
+```python
+# Example customer inquiries for different scenarios
+sales_inquiry = "I'm interested in buying a new laptop for video editing. What do you recommend?"
+support_inquiry = "My printer keeps showing an error code E-04. How can I fix this?"
+specialist_inquiry = "Can you tell me about the differences between your premium camera models?"
+general_inquiry = "What are your store hours this weekend?"
+
+# Test the main agent with different inquiries
+print("=== Sales Inquiry Example ===")
+print(f"Customer: {sales_inquiry}")
+
+result = await Runner.run(main_agent, input=sales_inquiry)
+print("\nResponse:")
+print(result.final_output)
+```
+This tests the system with different types of customer inquiries:
+1. A sales inquiry about buying a laptop
+2. A support inquiry about a printer error
+3. A specialist inquiry about camera models
+4. A general inquiry about store hours
+
+## Step 7: Testing All Inquiry Types 🔄
+```python
+print("\n=== Support Inquiry Example ===")
+print(f"Customer: {support_inquiry}")
+
+result = await Runner.run(main_agent, input=support_inquiry)
+print("\nResponse:")
+print(result.final_output)
+
+print("\n=== Specialist Inquiry Example ===")
+print(f"Customer: {specialist_inquiry}")
+
+result = await Runner.run(main_agent, input=specialist_inquiry)
+print("\nResponse:")
+print(result.final_output)
+
+print("\n=== General Inquiry Example ===")
+print(f"Customer: {general_inquiry}")
+
+result = await Runner.run(main_agent, input=general_inquiry)
+print("\nResponse:")
+print(result.final_output)
+```
+This continues testing with the remaining inquiry types to see how the main agent handles each one and when it triggers the custom handoff callbacks.
+
+## Step 8: Creating an Interactive Customer Service Mode 💬
+```python
+# Interactive mode
+print("\n=== Interactive Customer Service Mode ===")
 print("Type 'exit' to quit")
 
 while True:
-    user_input = input("\nYou: ")
+    user_input = input("\nYour inquiry: ")
     if user_input.lower() == 'exit':
         break
     
-    try:
-        result = await Runner.run(safe_assistant, user_input)
-        print(f"\nAssistant: {result.final_output}")
-    except Exception as e:
-        print(f"\nGuardrail Message: {str(e)}")
+    print("Processing...")
+    result = await Runner.run(main_agent, input=user_input)
+    print("\nResponse:")
+    print(result.final_output)
 ```
 This creates an interactive mode where:
-- You can ask any question
-- Safe questions get normal responses
-- Unsafe questions trigger helpful error messages
+- You can type any customer service inquiry
+- The main agent will handle it or hand it off to a specialist
+- You'll see the system messages when handoffs occur
 - You can type "exit" to quit
 
 ## Final Summary 📌
-✅ We created functions to detect profanity and personal information
-✅ We created a custom guardrail function that uses these detectors
-✅ We created an AI assistant that uses this guardrail
-✅ We tested the system with safe and unsafe inputs
-✅ We created an interactive mode with helpful feedback
+✅ We created custom callback functions for different handoff types
+✅ We created specialized agents for sales, support, and product information
+✅ We created enhanced handoff objects with callbacks and overrides
+✅ We created a main agent that uses these enhanced handoffs
+✅ We tested the system with different types of customer inquiries
+✅ We created an interactive customer service mode
 
 ## Try It Yourself! 🚀
 1. Install the required packages:
    ```
-   uv add openai-agents dotenv
+   uv add openai-agents python-dotenv
    ```
-2. Create a `.env` file with your API key
+2. Create a `.env` file with your OpenAI API key:
+   ```
+   OPENAI_API_KEY=your_api_key_here
+   ```
 3. Run the program:
    ```
-   uv run customizingguardrails.py
+   uv run customizinghandsoff.py
    ```
-4. Try different inputs to see how the guardrails work!
+4. Try asking different types of customer service questions!
 
 ## What You'll Learn 🧠
-- How to create custom safety checks for AI inputs
-- How to detect inappropriate content and personal information
-- How to provide helpful feedback when inputs are blocked
-- How to build safer AI assistants
+- How to create custom callback functions for handoffs
+- How to override tool names and descriptions for handoffs
+- How to create a professional customer service system
+- How to perform special actions when handoffs occur
+- How to build a complete customer service experience with specialized agents
 
 Happy coding! 🎉 

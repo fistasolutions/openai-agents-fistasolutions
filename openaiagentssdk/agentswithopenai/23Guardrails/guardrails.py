@@ -4,13 +4,13 @@ import asyncio
 import re
 from dotenv import load_dotenv
 import os
-from agentswithopenai import set_default_openai_key
+from agents import set_default_openai_key
 load_dotenv()
 
 openai_api_key = os.environ.get("OPENAI_API_KEY")
 set_default_openai_key(openai_api_key)
 
-from agentswithopenai import (
+from agents import (
     Agent,
     GuardrailFunctionOutput,
     InputGuardrailTripwireTriggered,
@@ -46,16 +46,15 @@ math_guardrail_agent = Agent(
     Consider these as math homework:
     - Explicit requests to solve equations or math problems
     - Questions that ask for step-by-step solutions to math problems
-    - Requests that mention "homework", "assignment", or "problem set" related to math
-    - Questions that are clearly from textbooks or worksheets
+    - Requests that use phrases like "solve for x" or similar academic language
     
-    Do NOT consider these as math homework:
-    - General questions about mathematical concepts
+    Don't consider these as math homework:
+    - General questions about math concepts
     - Requests for explanations of mathematical principles
-    - Questions about how to approach a type of problem (without specific problems to solve)
-    - Historical or biographical questions about mathematics
+    - Questions about how to approach a type of problem (without asking for the specific solution)
+    - Real-world math applications (like calculating a tip or mortgage payment)
     
-    Be thoughtful in your analysis and explain your reasoning clearly.
+    Provide clear reasoning for your decision.
     """,
     output_type=MathHomeworkOutput,
 )
@@ -63,23 +62,22 @@ math_guardrail_agent = Agent(
 code_guardrail_agent = Agent(
     name="Code Assignment Detector",
     instructions="""
-    You are a specialized agent that detects if users are asking for help with coding assignments or homework.
+    You are a specialized agent that detects if users are asking for help with coding assignments.
     
     Analyze the input to determine if it's asking for direct solutions to coding problems that appear to be assignments.
     
     Consider these as code assignments:
-    - Explicit requests to write code for specific tasks that sound like homework
-    - Questions that ask for complete solutions to programming problems
-    - Requests that mention "assignment", "homework", "project", or "lab" related to coding
-    - Questions that include specific requirements or constraints typical of assignments
+    - Explicit requests to write code for specific problems with assignment-like framing
+    - Questions that include requirements lists or specifications that sound like coursework
+    - Requests that use phrases like "implement a function that..." or similar academic language
     
-    Do NOT consider these as code assignments:
+    Don't consider these as code assignments:
     - General questions about programming concepts
     - Requests for explanations of coding principles
-    - Questions about debugging specific errors
-    - Questions about best practices or design patterns
+    - Questions about debugging existing code
+    - Professional development questions
     
-    Be thoughtful in your analysis and explain your reasoning clearly.
+    Provide clear reasoning for your decision.
     """,
     output_type=CodeAssignmentOutput,
 )
@@ -87,124 +85,174 @@ code_guardrail_agent = Agent(
 essay_guardrail_agent = Agent(
     name="Essay Request Detector",
     instructions="""
-    You are a specialized agent that detects if users are asking for help with writing essays or papers.
+    You are a specialized agent that detects if users are asking for help writing essays or papers.
     
-    Analyze the input to determine if it's asking for complete essays or papers that appear to be assignments.
+    Analyze the input to determine if it's asking for direct writing of essays that appear to be academic assignments.
     
     Consider these as essay requests:
     - Explicit requests to write essays, papers, or reports on specific topics
-    - Questions that ask for complete written content of substantial length
-    - Requests that mention "essay", "paper", "assignment", or "homework" related to writing
-    - Questions that include specific requirements like word count, format, or citation style
+    - Questions that include word counts, formatting requirements, or citation styles
+    - Requests that use phrases like "write an essay about..." or similar academic language
     
-    Do NOT consider these as essay requests:
-    - Requests for outlines or structure suggestions
-    - Questions about how to approach writing on a topic
-    - Requests for sources or research suggestions
-    - Questions about grammar, style, or writing techniques
+    Don't consider these as essay requests:
+    - Requests for outlines or brainstorming help
+    - Questions about essay structure or writing techniques
+    - Requests for feedback on existing writing
+    - Professional writing assistance (like resume help)
     
-    Be thoughtful in your analysis and explain your reasoning clearly.
-    If it is an essay request, identify the subject area if possible.
+    Provide clear reasoning for your decision and identify the subject if it's an essay request.
     """,
     output_type=EssayWritingOutput,
 )
 
 # Define guardrail functions
+@input_guardrail
 async def math_homework_guardrail(
-    ctx: RunContextWrapper[None], agent: Agent, input_data: Union[str, List[TResponseInputItem]]
+    ctx: RunContextWrapper[None], agent: Agent, input: Union[str, List[TResponseInputItem]]
 ) -> GuardrailFunctionOutput:
-    # Convert input to string if it's a list
-    input_str = input_data if isinstance(input_data, str) else str(input_data)
+    """Detect and block requests for math homework help."""
+    result = await Runner.run(math_guardrail_agent, input, context=ctx.context)
     
-    # Run the math homework detector agent
-    result = await Runner.run(math_guardrail_agent, input_str)
-    output = result.final_output_as(MathHomeworkOutput)
-    
-    # Return guardrail output
     return GuardrailFunctionOutput(
-        output_info=output,
-        tripwire_triggered=output.is_math_homework,
-        message="I'm sorry, but I can't provide direct solutions to math homework problems. I'd be happy to explain concepts or guide you through the problem-solving process instead."
+        output_info=result.final_output,
+        tripwire_triggered=result.final_output.is_math_homework,
+        message="I'm sorry, but I can't help with solving math homework problems directly. I'd be happy to explain math concepts or guide you through the problem-solving process instead."
     )
 
+@input_guardrail
 async def code_assignment_guardrail(
-    ctx: RunContextWrapper[None], agent: Agent, input_data: Union[str, List[TResponseInputItem]]
+    ctx: RunContextWrapper[None], agent: Agent, input: Union[str, List[TResponseInputItem]]
 ) -> GuardrailFunctionOutput:
-    # Convert input to string if it's a list
-    input_str = input_data if isinstance(input_data, str) else str(input_data)
+    """Detect and block requests for coding assignment solutions."""
+    result = await Runner.run(code_guardrail_agent, input, context=ctx.context)
     
-    # Run the code assignment detector agent
-    result = await Runner.run(code_guardrail_agent, input_str)
-    output = result.final_output_as(CodeAssignmentOutput)
-    
-    # Return guardrail output
     return GuardrailFunctionOutput(
-        output_info=output,
-        tripwire_triggered=output.is_code_assignment,
-        message="I'm sorry, but I can't provide complete solutions to coding assignments. I'd be happy to explain concepts, help debug specific issues, or provide guidance on how to approach the problem instead."
+        output_info=result.final_output,
+        tripwire_triggered=result.final_output.is_code_assignment,
+        message="I'm sorry, but I can't write code for assignments directly. I'd be happy to explain programming concepts, help debug issues, or guide you through the development process instead."
     )
 
+@input_guardrail
 async def essay_writing_guardrail(
-    ctx: RunContextWrapper[None], agent: Agent, input_data: Union[str, List[TResponseInputItem]]
+    ctx: RunContextWrapper[None], agent: Agent, input: Union[str, List[TResponseInputItem]]
 ) -> GuardrailFunctionOutput:
-    # Convert input to string if it's a list
-    input_str = input_data if isinstance(input_data, str) else str(input_data)
+    """Detect and block requests for writing essays."""
+    result = await Runner.run(essay_guardrail_agent, input, context=ctx.context)
     
-    # Run the essay request detector agent
-    result = await Runner.run(essay_guardrail_agent, input_str)
-    output = result.final_output_as(EssayWritingOutput)
-    
-    # Return guardrail output
     return GuardrailFunctionOutput(
-        output_info=output,
-        tripwire_triggered=output.is_essay_request,
-        message="I'm sorry, but I can't write complete essays or papers for you. I'd be happy to help with brainstorming ideas, suggesting an outline, or providing information on the topic that you can use in your own writing."
+        output_info=result.final_output,
+        tripwire_triggered=result.final_output.is_essay_request,
+        message="I'm sorry, but I can't write essays or papers for academic assignments. I'd be happy to help with brainstorming ideas, creating outlines, or providing feedback on your writing instead."
     )
 
-# Create a tutor agent with all guardrails
+# Create a main agent with guardrails
 tutor_agent = Agent(
     name="Educational Tutor",
     instructions="""
     You are an educational tutor who helps students learn and understand various subjects.
     
-    Your approach:
-    - Explain concepts clearly and thoroughly
-    - Provide examples to illustrate ideas
-    - Ask guiding questions to help students think through problems
-    - Offer resources for further learning
-    - Encourage critical thinking and independent problem-solving
+    Your role is to:
+    1. Explain concepts clearly and thoroughly
+    2. Guide students through problem-solving processes
+    3. Provide examples to illustrate ideas
+    4. Answer questions about academic subjects
+    5. Suggest resources for further learning
     
-    You cover subjects including math, science, programming, history, literature, and more.
-    
-    Remember that your goal is to help students learn, not to do their work for them.
+    Always focus on helping students understand the material rather than simply giving them answers.
+    Encourage critical thinking and independent problem-solving.
     """,
     input_guardrails=[
-        input_guardrail(math_homework_guardrail),
-        input_guardrail(code_assignment_guardrail),
-        input_guardrail(essay_writing_guardrail),
+        math_homework_guardrail,
+        code_assignment_guardrail,
+        essay_writing_guardrail,
     ],
 )
 
-# Create a simple agent with just the math guardrail for demonstration
-simple_agent = Agent(
-    name="Simple Math Tutor",
-    instructions="""
-    You are a math tutor who helps students understand mathematical concepts.
+# Function to test guardrails with various inputs
+async def test_guardrails():
+    print("=== Testing Guardrails ===\n")
     
-    Explain concepts clearly and provide examples to illustrate ideas.
-    """,
-    input_guardrails=[
-        input_guardrail(math_homework_guardrail),
-    ],
-)
+    test_cases = [
+        {
+            "name": "Math Homework",
+            "input": "Can you solve this equation for me? 3x + 7 = 22",
+            "expected_trigger": True,
+            "guardrail_type": "Math Homework"
+        },
+        {
+            "name": "Math Concept",
+            "input": "Can you explain how derivatives work in calculus?",
+            "expected_trigger": False,
+            "guardrail_type": "Math Homework"
+        },
+        {
+            "name": "Code Assignment",
+            "input": "Write a Python function that implements a binary search tree with insert, delete, and search operations.",
+            "expected_trigger": True,
+            "guardrail_type": "Code Assignment"
+        },
+        {
+            "name": "Code Help",
+            "input": "I'm getting an IndexError in my Python code. How do I debug this?",
+            "expected_trigger": False,
+            "guardrail_type": "Code Assignment"
+        },
+        {
+            "name": "Essay Request",
+            "input": "Write a 1000-word essay on the causes and effects of climate change. Include at least 5 sources.",
+            "expected_trigger": True,
+            "guardrail_type": "Essay Request"
+        },
+        {
+            "name": "Essay Help",
+            "input": "What's a good structure for an argumentative essay?",
+            "expected_trigger": False,
+            "guardrail_type": "Essay Request"
+        },
+        {
+            "name": "General Question",
+            "input": "What are some good study habits for college students?",
+            "expected_trigger": False,
+            "guardrail_type": "None"
+        }
+    ]
+    
+    for i, test_case in enumerate(test_cases):
+        print(f"Test {i+1}: {test_case['name']}")
+        print(f"Input: \"{test_case['input']}\"")
+        print(f"Expected to trigger {test_case['guardrail_type']} guardrail: {test_case['expected_trigger']}")
+        
+        try:
+            result = await Runner.run(tutor_agent, test_case['input'])
+            print("Result: Guardrail not triggered")
+            print(f"Response: {result.final_output[:100]}...")
+            
+            if test_case['expected_trigger']:
+                print("WARNING: Expected guardrail to trigger, but it didn't!")
+            
+        except InputGuardrailTripwireTriggered as e:
+            print(f"Result: Guardrail triggered")
+            print(f"Message: {e.message}")
+            
+            if not test_case['expected_trigger']:
+                print("WARNING: Guardrail triggered unexpectedly!")
+        
+        print("\n" + "-" * 50 + "\n")
 
 # Function to demonstrate a simple guardrail
 async def simple_guardrail_demo():
-    print("=== Simple Math Guardrail Demo ===")
+    print("=== Simple Guardrail Demo ===\n")
+    
+    # Create a simple agent with just the math homework guardrail
+    simple_agent = Agent(
+        name="Simple Tutor",
+        instructions="You are a helpful tutor who assists with educational questions.",
+        input_guardrails=[math_homework_guardrail],
+    )
     
     # Test with a math homework question
-    math_question = "Solve the equation 3x + 5 = 20 and show all your work."
-    print(f"\nTesting with: \"{math_question}\"")
+    math_question = "Hello, can you help me solve for x: 2x + 3 = 11?"
+    print(f"Testing with: \"{math_question}\"")
     
     try:
         result = await Runner.run(simple_agent, math_question)
@@ -225,40 +273,6 @@ async def simple_guardrail_demo():
     except InputGuardrailTripwireTriggered as e:
         print("Guardrail triggered unexpectedly")
         print(f"Message: {e.message}")
-
-async def test_guardrails():
-    print("\n=== Testing All Guardrails ===")
-    
-    # Test cases for each guardrail
-    test_cases = [
-        # Math homework examples
-        "Solve for x: 2x + 7 = 15",
-        "Find the derivative of f(x) = x^3 + 2x^2 - 5x + 3",
-        
-        # Code assignment examples
-        "Write a Python function to find the Fibonacci sequence up to n terms",
-        "Create a Java class for a banking system with deposit and withdrawal methods",
-        
-        # Essay request examples
-        "Write a 500-word essay on the causes of World War II",
-        "Can you write a paper about the environmental impacts of climate change?",
-        
-        # Legitimate questions
-        "How does photosynthesis work?",
-        "Can you explain the concept of object-oriented programming?",
-        "What were some major causes of World War II?",
-        "How do I approach solving quadratic equations?"
-    ]
-    
-    for i, test_case in enumerate(test_cases):
-        print(f"\nTest Case {i+1}: \"{test_case}\"")
-        
-        try:
-            result = await Runner.run(tutor_agent, test_case)
-            print("No guardrail triggered")
-            print(f"Response: {result.final_output[:100]}...")
-        except InputGuardrailTripwireTriggered as e:
-            print(f"Guardrail triggered: {e.message}")
 
 async def main():
     

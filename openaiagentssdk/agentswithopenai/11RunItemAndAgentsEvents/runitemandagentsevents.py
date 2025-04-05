@@ -1,6 +1,6 @@
 import asyncio
 import random
-from agentswithopenai import Agent, ItemHelpers, Runner, function_tool, set_default_openai_key
+from agents import Agent, ItemHelpers, Runner, function_tool, set_default_openai_key
 from dotenv import load_dotenv
 import os
 

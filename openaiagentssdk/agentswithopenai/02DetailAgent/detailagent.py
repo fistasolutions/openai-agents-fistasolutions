@@ -1,8 +1,8 @@
-from agentswithopenai import Agent, InputGuardrail,GuardrailFunctionOutput, Runner
+from agents import Agent, InputGuardrail,GuardrailFunctionOutput, Runner
 from pydantic import BaseModel
 import asyncio
 from dotenv import load_dotenv
-from agentswithopenai import set_default_openai_key
+from agents import set_default_openai_key
 import os
 
 load_dotenv()
@@ -64,4 +64,4 @@ async def main():
     print("Philosophy homework result:", result.final_output)
 
 if __name__ == "__main__":
-    asyncio.run(main()) 
+    asyncio.run(main())

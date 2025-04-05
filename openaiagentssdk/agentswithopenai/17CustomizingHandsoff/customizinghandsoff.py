@@ -1,4 +1,4 @@
-from agentswithopenai import Agent, handoff, RunContextWrapper, Runner, set_default_openai_key
+from agents import Agent, handoff, RunContextWrapper, Runner, set_default_openai_key
 import asyncio
 from dotenv import load_dotenv
 import os
@@ -8,7 +8,6 @@ load_dotenv()
 
 openai_api_key = os.environ.get("OPENAI_API_KEY")
 set_default_openai_key(openai_api_key)
-
 # Define custom handoff callbacks
 def on_handoff_to_sales(ctx: RunContextWrapper[None]):
     print("\n[SYSTEM] Handoff to Sales Agent initiated")

@@ -1,6 +1,6 @@
-from agentswithopenai import Agent, Runner, ModelSettings, function_tool
+from agents import Agent, Runner, ModelSettings, function_tool
 from dotenv import load_dotenv
-from agentswithopenai import set_default_openai_key
+from agents import set_default_openai_key
 import asyncio
 import os
 
@@ -25,4 +25,5 @@ async def main():
     print(result.final_output)
 
 if __name__ == "__main__":
-    asyncio.run(main()) 
+    asyncio.run(main())
+    

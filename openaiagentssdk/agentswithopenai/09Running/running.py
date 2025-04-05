@@ -1,9 +1,9 @@
-from agentswithopenai import Agent, ModelSettings, function_tool, trace
+from agents import Agent, ModelSettings, function_tool, trace
 from dotenv import load_dotenv
 import asyncio
 import os
 import uuid
-from agentswithopenai import Runner, set_default_openai_key
+from agents import Runner, set_default_openai_key
 load_dotenv()
 
 openai_api_key = os.environ.get("OPENAI_API_KEY")

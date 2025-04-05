@@ -1,4 +1,4 @@
-from agentswithopenai import Agent, handoff, Runner, set_default_openai_key
+from agents import Agent, handoff, Runner, set_default_openai_key
 from agents.extensions import handoff_filters
 import asyncio
 from dotenv import load_dotenv
@@ -9,7 +9,6 @@ load_dotenv()
 
 openai_api_key = os.environ.get("OPENAI_API_KEY")
 set_default_openai_key(openai_api_key)
-
 # Create a custom input filter that adds context about the customer
 def add_customer_context(input_text: str) -> str:
     return f"""
@@ -108,32 +107,35 @@ faq_handoff = handoff(
 
 technical_handoff = handoff(
     agent=technical_agent,
-    input_filter=add_system_instructions,  # Our custom filter that adds system instructions
-    tool_name_override="connect_with_technical_support",
-    tool_description_override="Connect with a technical specialist for help with technical issues.",
+    input_filter=add_system_instructions,  # Add system instructions to the input
+    tool_name_override="get_technical_support",
+    tool_description_override="Transfer to a technical specialist for help with technical issues.",
 )
 
 billing_handoff = handoff(
     agent=billing_agent,
-    input_filter=sanitize_sensitive_info,  # Our custom filter that sanitizes sensitive information
-    tool_name_override="speak_with_billing_specialist",
-    tool_description_override="Speak with a billing specialist about account and payment questions.",
+    input_filter=lambda text: sanitize_sensitive_info(add_customer_context(text)),  # Chain multiple filters
+    tool_name_override="contact_billing_department",
+    tool_description_override="Transfer to the billing department for help with account and payment issues.",
 )
 
-# Create a main agent that uses handoffs with different input filters
+# Create a main agent that can hand off to specialized agents with filtered inputs
 main_agent = Agent(
     name="Customer Service Agent",
     instructions="""
     You are the primary customer service agent. Your role is to:
     
     1. Greet customers and understand their initial needs
-    2. Handle general inquiries directly
+    2. Handle simple inquiries directly
     3. Direct customers to the appropriate specialized agent when needed:
        - FAQ Specialist: For common questions about our products and services
-       - Technical Support: For technical issues and troubleshooting
-       - Billing Specialist: For questions about billing, payments, and accounts
+       - Technical Support: For help with technical issues and troubleshooting
+       - Billing Department: For questions about billing, payments, and accounts
     
-    Before transferring, briefly explain why you're connecting them with a specialist.
+    Before transferring a customer, briefly explain why you're connecting them with a specialist
+    and what they can expect from the handoff.
+    
+    You have access to customer tools that should not be shared with other agents.
     """,
     handoffs=[
         faq_handoff,
@@ -144,8 +146,25 @@ main_agent = Agent(
         {
             "type": "function",
             "function": {
-                "name": "update_customer_info",
-                "description": "Update a customer's information in the system",
+                "name": "access_customer_database",
+                "description": "Access the customer database to retrieve customer information",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "customer_id": {
+                            "type": "string",
+                            "description": "The customer's ID"
+                        }
+                    },
+                    "required": ["customer_id"]
+                }
+            }
+        },
+        {
+            "type": "function",
+            "function": {
+                "name": "update_customer_record",
+                "description": "Update the customer's record in the database",
                 "parameters": {
                     "type": "object",
                     "properties": {

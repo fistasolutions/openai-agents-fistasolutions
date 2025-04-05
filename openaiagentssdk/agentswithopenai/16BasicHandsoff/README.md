@@ -1,183 +1,231 @@
-# 🔄 Customizing Handoffs Example
+# 🔄 Basic Handoffs Example
 
 ## What This Code Does (Big Picture)
-Imagine having a team of robot helpers where you can control exactly when and how they pass tasks to each other! This code shows how to create custom rules for when one AI assistant should hand off a conversation to another specialist AI.
+Imagine a customer service department where the receptionist directs customers to the right specialist! This code shows how to create a customer service system where a triage agent can hand off conversations to specialized agents for billing, refunds, or technical support.
 
 Now, let's go step by step!
 
 ## Step 1: Setting Up the Magic Key 🗝️
 ```python
-from agentswithopenai import Agent, Runner, function_tool, set_default_openai_key
-from dotenv import load_dotenv
+from agents import Agent, Runner, handoff, set_default_openai_key
 import asyncio
+from dotenv import load_dotenv
 import os
-import re
-
+from agents import set_default_openai_key
 load_dotenv()
+
 openai_api_key = os.environ.get("OPENAI_API_KEY")
 set_default_openai_key(openai_api_key)
 ```
 The AI assistants need a magic key (API key) to work properly.
 
-This code finds the magic key hidden in a secret file (.env) and unlocks it.
+This code finds the OpenAI API key hidden in a secret file (.env), unlocks it, and sets it as the default key for our agents.
 
-## Step 2: Creating Specialist Agents 👨‍🔧👩‍🍳
+## Step 2: Creating Specialized Customer Service Agents 👨‍💼👩‍💼👨‍💻
 ```python
-tech_support_agent = Agent(
-    name="Tech Support",
-    handoff_description="Specialist for technical problems with computers, phones, and other devices",
+# Create specialized agents for different customer service functions
+billing_agent = Agent(
+    name="Billing Agent",
     instructions="""
-    You are a technical support specialist. Help users troubleshoot problems with:
-    - Computers and laptops
-    - Smartphones and tablets
-    - Internet connectivity
-    - Software installation and configuration
+    You are a specialized billing support agent. You help customers with:
     
-    Provide step-by-step instructions and ask clarifying questions when needed.
+    1. Understanding their bill and charges
+    2. Explaining billing policies
+    3. Handling payment issues
+    4. Setting up payment plans
+    5. Updating billing information
+    
+    Be professional, clear, and helpful when addressing billing concerns.
+    If the customer needs a refund, politely explain that you'll transfer them to the refund department.
     """,
+    handoff_description="Transfer to this agent for billing-related questions, payment issues, or bill explanations."
 )
 
-cooking_agent = Agent(
-    name="Cooking Assistant",
-    handoff_description="Specialist for cooking advice, recipes, and food preparation",
+refund_agent = Agent(
+    name="Refund Agent",
     instructions="""
-    You are a cooking expert. Help users with:
-    - Finding and adapting recipes
-    - Cooking techniques and methods
-    - Ingredient substitutions
-    - Meal planning and preparation
+    You are a specialized refund support agent. You help customers with:
     
-    Be friendly and encouraging, and consider dietary restrictions when mentioned.
+    1. Processing refund requests
+    2. Explaining refund policies and timeframes
+    3. Checking refund status
+    4. Resolving refund issues
+    5. Providing refund documentation
+    
+    Be empathetic and solution-oriented when handling refund requests.
+    Clearly explain the refund process and expected timelines.
     """,
+    handoff_description="Transfer to this agent for refund requests, refund status checks, or refund policy questions."
+)
+
+technical_agent = Agent(
+    name="Technical Support Agent",
+    instructions="""
+    You are a specialized technical support agent. You help customers with:
+    
+    1. Troubleshooting product issues
+    2. Providing setup assistance
+    3. Resolving error messages
+    4. Guiding through software updates
+    5. Explaining technical features
+    
+    Be patient and thorough when providing technical assistance.
+    Use clear, step-by-step instructions that are easy to follow.
+    """,
+    handoff_description="Transfer to this agent for technical issues, troubleshooting, or product functionality questions."
 )
 ```
-This creates two specialist AIs:
-- A tech support expert who helps with device problems
-- A cooking expert who helps with recipes and food preparation
+This creates three specialized customer service agents:
+- A billing agent who handles payment issues and billing questions
+- A refund agent who processes refund requests and explains policies
+- A technical support agent who troubleshoots product issues
 
-## Step 3: Creating a Custom Handoff Function 🔀
-```python
-def should_handoff_to_cooking(message: str) -> bool:
-    """Determine if a message should be handed off to the cooking agent"""
-    # Look for cooking-related keywords
-    cooking_keywords = [
-        "recipe", "cook", "food", "meal", "ingredient", "bake", "kitchen",
-        "dinner", "lunch", "breakfast", "dish", "cuisine"
-    ]
-    
-    message_lower = message.lower()
-    
-    # Check for cooking keywords
-    for keyword in cooking_keywords:
-        if keyword in message_lower:
-            return True
-    
-    # Check for specific patterns like "how to make X"
-    if re.search(r"how to (make|prepare|cook)", message_lower):
-        return True
-    
-    return False
-```
-This function:
-- Takes a message as input
-- Checks if it contains cooking-related keywords
-- Looks for patterns like "how to make X"
-- Returns True if the message should go to the cooking expert
+Each agent has a `handoff_description` that explains when they should receive handoffs.
 
-## Step 4: Creating a Main Assistant with Custom Handoff Logic 🤖
+## Step 3: Creating a Triage Agent That Can Hand Off to Specialists 🧑‍💼
 ```python
-main_agent = Agent(
-    name="General Assistant",
+# Create a triage agent that can hand off to specialized agents
+triage_agent = Agent(
+    name="Customer Service Triage",
     instructions="""
-    You are a helpful general assistant. You can answer a wide range of questions,
-    but for specialized topics, you'll hand off to the appropriate specialist.
+    You are the initial customer service agent who triages customer inquiries.
     
-    For technical support questions, hand off to the Tech Support agent.
-    For cooking-related questions, the system will automatically detect and hand off to the Cooking Assistant.
+    Your responsibilities:
+    1. Greet the customer and identify their issue
+    2. Handle simple general inquiries directly
+    3. For specialized issues, transfer to the appropriate specialized agent:
+       - Billing Agent: For billing questions, payment issues, or bill explanations
+       - Refund Agent: For refund requests, refund status, or refund policy questions
+       - Technical Support: For technical issues, troubleshooting, or product functionality
+    
+    Before transferring, briefly explain to the customer why you're transferring them
+    and what the specialized agent will help them with.
     """,
-    handoffs=[tech_support_agent, cooking_agent],
-    handoff_handlers={
-        cooking_agent.name: should_handoff_to_cooking
-    }
+    handoffs=[
+        billing_agent,
+        handoff(refund_agent),  # Using the handoff function (equivalent to just passing the agent)
+        technical_agent,
+    ],
 )
 ```
-This creates a main AI assistant that:
-- Handles general questions itself
-- Can hand off to tech support when needed
-- Uses our custom function to decide when to hand off cooking questions
+This creates a triage agent that:
+- Greets customers and identifies their issues
+- Handles simple inquiries directly
+- Transfers specialized issues to the appropriate agent
+- Explains the transfer to the customer
 
-## Step 5: Running the Program with Different Questions 🏃‍♂️
+Note that there are two ways to specify handoffs:
+1. Directly including the agent in the handoffs list
+2. Using the `handoff()` function (both approaches are equivalent)
+
+## Step 4: Testing with Different Customer Inquiries 🧪
 ```python
-async def main():
-    # Test with different types of queries
-    general_query = "What's the capital of France?"
-    tech_query = "My computer won't turn on. What should I do?"
-    cooking_query = "How do I make chocolate chip cookies?"
-    
-    # Run the main agent with each query
-    print("\n--- General Query ---")
-    result = await Runner.run(main_agent, general_query)
-    print(f"Handled by: {result.agent_name}")
-    print(result.final_output)
-    
-    print("\n--- Tech Support Query ---")
-    result = await Runner.run(main_agent, tech_query)
-    print(f"Handled by: {result.agent_name}")
-    print(result.final_output)
-    
-    print("\n--- Cooking Query ---")
-    result = await Runner.run(main_agent, cooking_query)
-    print(f"Handled by: {result.agent_name}")
-    print(result.final_output)
+# Example customer inquiries for different scenarios
+billing_inquiry = "I'm confused about the charges on my last bill. There's an extra $20 fee I don't recognize."
+refund_inquiry = "I want to request a refund for my recent purchase. The product doesn't work as advertised."
+technical_inquiry = "My software keeps crashing whenever I try to save my work. How can I fix this?"
+general_inquiry = "What are your business hours?"
+
+# Test the triage agent with different inquiries
+print("=== Billing Inquiry Example ===")
+print(f"Customer: {billing_inquiry}")
+
+result = await Runner.run(triage_agent, input=billing_inquiry)
+print("\nResponse:")
+print(result.final_output)
+# Let's print the available attributes to debug
+print(f"Available attributes: {dir(result)}")
+# For now, just print the agent name we started with
+print(f"Started with: {triage_agent.name}")
 ```
-This tests the system with different types of questions:
-1. A general question (should be handled by the main agent)
-2. A tech support question (should be handed off to tech support)
-3. A cooking question (should be automatically detected and handed off)
+This tests the system with different types of customer inquiries:
+1. A billing question about an unexpected charge
+2. A refund request for a product
+3. A technical issue with software crashing
+4. A general question about business hours
 
-## Step 6: Creating an Interactive Mode 💬
+For each inquiry, we run the triage agent and see how it responds.
+
+## Step 5: Testing All Inquiry Types 🔄
 ```python
-print("\n--- Interactive Mode ---")
+print("\n=== Refund Inquiry Example ===")
+print(f"Customer: {refund_inquiry}")
+
+result = await Runner.run(triage_agent, input=refund_inquiry)
+print("\nResponse:")
+print(result.final_output)
+print(f"Started with: {triage_agent.name}")
+
+print("\n=== Technical Inquiry Example ===")
+print(f"Customer: {technical_inquiry}")
+
+result = await Runner.run(triage_agent, input=technical_inquiry)
+print("\nResponse:")
+print(result.final_output)
+print(f"Started with: {triage_agent.name}")
+
+print("\n=== General Inquiry Example ===")
+print(f"Customer: {general_inquiry}")
+
+result = await Runner.run(triage_agent, input=general_inquiry)
+print("\nResponse:")
+print(result.final_output)
+print(f"Started with: {triage_agent.name}")
+```
+This continues testing with the remaining inquiry types to see how the triage agent handles each one.
+
+## Step 6: Creating an Interactive Customer Service Mode 💬
+```python
+# Interactive mode
+print("\n=== Interactive Customer Service Mode ===")
 print("Type 'exit' to quit")
 
 while True:
-    user_input = input("\nYou: ")
+    user_input = input("\nYour inquiry: ")
     if user_input.lower() == 'exit':
         break
     
-    result = await Runner.run(main_agent, user_input)
-    print(f"\nResponse from {result.agent_name}:")
+    print("Processing...")
+    result = await Runner.run(triage_agent, input=user_input)
+    print("\nResponse:")
     print(result.final_output)
+    print(f"Started with: {triage_agent.name}")
 ```
 This creates an interactive mode where:
-- You can ask any type of question
-- The system automatically decides which agent should handle it
-- You can see which agent responded to your question
+- You can type any customer service inquiry
+- The triage agent will either handle it or hand it off
+- You can see the response from the appropriate agent
 - You can type "exit" to quit
 
 ## Final Summary 📌
-✅ We created specialist agents for tech support and cooking
-✅ We created a custom function to detect cooking-related questions
-✅ We created a main agent that uses this function for handoffs
-✅ We tested the system with different types of questions
-✅ We created an interactive mode that shows which agent responds
+✅ We created specialized agents for billing, refunds, and technical support
+✅ We created a triage agent that can hand off to these specialists
+✅ We tested the system with different types of customer inquiries
+✅ We demonstrated two ways to specify handoffs
+✅ We created an interactive customer service mode
+✅ We tracked which agent handled each inquiry
 
 ## Try It Yourself! 🚀
 1. Install the required packages:
    ```
-   uv add openai-agents dotenv
+   uv add openai-agents python-dotenv
    ```
-2. Create a `.env` file with your API key
+2. Create a `.env` file with your OpenAI API key:
+   ```
+   OPENAI_API_KEY=your_api_key_here
+   ```
 3. Run the program:
    ```
-   uv run customizinghandsoff.py
+   uv run basichandsoff.py
    ```
-4. Try asking different types of questions to see which agent handles them!
+4. Try asking different types of customer service questions!
 
 ## What You'll Learn 🧠
-- How to create custom handoff logic
-- How to use pattern matching for message classification
-- How to create a system of specialized agents
-- How to track which agent handles each request
+- How to create specialized agents for different tasks
+- How to set up handoff descriptions for agents
+- How to create a triage agent that can hand off to specialists
+- How to use the handoff() function (equivalent to direct agent inclusion)
+- How to test a customer service system with different inquiry types
+- How to build an interactive customer service interface
 
 Happy coding! 🎉 

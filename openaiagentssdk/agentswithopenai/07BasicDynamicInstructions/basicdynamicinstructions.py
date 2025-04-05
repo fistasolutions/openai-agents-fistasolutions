@@ -1,11 +1,11 @@
-from agentswithopenai import Agent,Runner, ModelSettings, function_tool, RunContextWrapper
+from agents import Agent,Runner, ModelSettings, function_tool, RunContextWrapper
 from dotenv import load_dotenv
 from dataclasses import dataclass
 from typing import List
 import asyncio
 import os
 import random
-from agentswithopenai import set_default_openai_key
+from agents import set_default_openai_key
 
 load_dotenv()
 

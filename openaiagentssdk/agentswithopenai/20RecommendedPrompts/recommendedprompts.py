@@ -1,4 +1,4 @@
-from agentswithopenai import Agent, Runner, set_default_openai_key
+from agents import Agent, Runner, set_default_openai_key
 from agents.extensions.handoff_prompt import RECOMMENDED_PROMPT_PREFIX
 import asyncio
 from dotenv import load_dotenv
@@ -45,62 +45,73 @@ support_agent = Agent(
     5. Collecting information for bug reports when necessary
     
     When helping customers:
-    - Use clear, step-by-step instructions
+    - Ask clarifying questions to understand the exact issue
+    - Provide step-by-step instructions that are easy to follow
     - Avoid technical jargon unless necessary
-    - Confirm understanding at each troubleshooting step
-    - Be patient with users of all technical skill levels
-    - Focus on resolving the immediate issue first
+    - Confirm that the solution worked before concluding
+    - Document any new issues for the development team
     
-    Our software works on Windows 10+, macOS 10.15+, and major Linux distributions.
+    Our software is compatible with Windows 10/11, macOS 10.14+, and major Linux distributions.
     """,
 )
 
-# Create a standard agent without the recommended prompt prefix
+# Create a standard agent without the recommended prompt prefix for comparison
 standard_agent = Agent(
-    name="General Assistant",
+    name="Standard Agent",
     instructions="""
-    You are a helpful assistant for a software company. Your responsibilities include:
+    You are a customer service agent for a software company. Your responsibilities include:
     
-    1. Answering general questions about the company and its products
-    2. Providing basic information about features and capabilities
-    3. Directing customers to the appropriate specialized teams
-    4. Helping with account management and general inquiries
-    5. Offering resources like documentation and tutorials
+    1. Answering general questions about our products and services
+    2. Directing customers to the appropriate department for specialized help
+    3. Providing information about company policies and procedures
+    4. Assisting with account management and basic inquiries
+    5. Collecting customer feedback and suggestions
     
     When helping customers:
-    - Be friendly and approachable
+    - Be friendly and professional
     - Provide accurate information
-    - Acknowledge when you don't know something
-    - Maintain a positive and helpful attitude
-    - Focus on customer satisfaction
+    - Escalate complex issues to specialists
+    - Follow up to ensure customer satisfaction
+    - Document customer interactions
     """,
 )
+
+# Function to compare responses between agents
+async def compare_responses(query):
+    print(f"\n=== Query: {query} ===\n")
+    
+    print("--- Response with Recommended Prompt Prefix ---")
+    result = await Runner.run(billing_agent, input=query)
+    print(result.final_output)
+    
+    print("\n--- Response with Standard Prompt ---")
+    result = await Runner.run(standard_agent, input=query)
+    print(result.final_output)
 
 async def main():
     
-    # Example queries for each agent
+    # Print the recommended prompt prefix for reference
+    print("=== Recommended Prompt Prefix ===")
+    print(RECOMMENDED_PROMPT_PREFIX)
+    
+    # Example queries to test with different agents
     billing_query = "I was charged twice for my subscription this month. Can I get a refund?"
-    support_query = "I'm getting an error message when I try to install your software on my Mac."
-    general_query = "What kind of products does your company offer?"
+    technical_query = "I'm having trouble installing your software on my Mac. It keeps showing an error during installation."
+    general_query = "What are your business hours and how can I contact customer support?"
     
-    # Test the billing agent with the recommended prompt prefix
-    print("=== Billing Agent (with recommended prompt) ===")
-    print(f"Query: {billing_query}")
+    # Compare responses between agents with and without the recommended prompt prefix
+    await compare_responses(billing_query)
     
-    result = await Runner.run(billing_agent, input=billing_query)
+    # Test the technical support agent with a relevant query
+    print("\n=== Technical Support Query ===")
+    print(f"Query: {technical_query}")
+    
+    result = await Runner.run(support_agent, input=technical_query)
     print("\nResponse:")
     print(result.final_output)
     
-    # Test the support agent with the recommended prompt prefix
-    print("\n=== Technical Support Agent (with recommended prompt) ===")
-    print(f"Query: {support_query}")
-    
-    result = await Runner.run(support_agent, input=support_query)
-    print("\nResponse:")
-    print(result.final_output)
-    
-    # Test the standard agent without the recommended prompt prefix
-    print("\n=== Standard Agent (without recommended prompt) ===")
+    # Test the standard agent with a general query
+    print("\n=== General Query ===")
     print(f"Query: {general_query}")
     
     result = await Runner.run(standard_agent, input=general_query)

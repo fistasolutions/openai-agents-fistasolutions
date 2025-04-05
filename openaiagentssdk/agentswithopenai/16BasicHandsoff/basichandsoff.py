@@ -1,8 +1,8 @@
-from agentswithopenai import Agent, Runner, handoff, set_default_openai_key
+from agents import Agent, Runner, handoff, set_default_openai_key
 import asyncio
 from dotenv import load_dotenv
 import os
-from agentswithopenai import set_default_openai_key
+from agents import set_default_openai_key
 load_dotenv()
 
 openai_api_key = os.environ.get("OPENAI_API_KEY")

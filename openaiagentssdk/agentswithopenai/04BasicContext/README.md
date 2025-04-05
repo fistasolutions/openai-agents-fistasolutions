@@ -9,8 +9,8 @@ Now, let's go step by step!
 ```python
 from dataclasses import dataclass
 from typing import List, Optional
-from agentswithopenai import Agent, Runner, ModelSettings, function_tool
-from agentswithopenai import set_default_openai_key
+from agents import Agent, Runner, ModelSettings, function_tool
+from agents import set_default_openai_key
 from dotenv import load_dotenv
 import asyncio
 import os
@@ -21,7 +21,7 @@ set_default_openai_key(api_key)
 ```
 The AI assistant needs a magic key (API key) to work properly.
 
-This code finds the magic key hidden in a secret file (.env) and unlocks it.
+This code finds the OpenAI API key hidden in a secret file (.env), unlocks it, and sets it as the default key for our agents.
 
 ## Step 2: Creating User Information Classes 👤
 ```python
@@ -38,7 +38,8 @@ class UserContext:
     is_pro_user: bool
     
     async def fetch_purchases(self) -> List[Purchase]:
-        # This would normally get data from a database
+        # This is a mock implementation
+        # In a real application, this would fetch from a database
         if self.uid == "user123":
             return [
                 Purchase(id="p1", name="Basic Plan", price=9.99, date="2023-01-15"),
@@ -63,11 +64,26 @@ async def get_user_info(context: UserContext) -> str:
 async def get_purchase_history(context: UserContext) -> str:
     """Get the purchase history for the current user"""
     purchases = await context.fetch_purchases()
-    # ... returns formatted purchase history
+    if not purchases:
+        return "No purchase history found."
+    
+    result = "Purchase History:\n"
+    for p in purchases:
+        result += f"- {p.name}: ${p.price} on {p.date}\n"
+    return result
+
+@function_tool
+async def get_personalized_greeting(context: UserContext) -> str:
+    """Get a personalized greeting based on user status"""
+    if context.is_pro_user:
+        return "Welcome back to our premium service! We value your continued support."
+    else:
+        return "Welcome! Consider upgrading to our Pro plan for additional features."
 ```
 These tools can:
 - Look up information about the current user
 - Check the user's purchase history
+- Provide personalized greetings based on user status
 - Use this information to provide personalized responses
 
 ## Step 4: Creating a Context-Aware AI Assistant 🤖
@@ -95,18 +111,22 @@ async def main():
     free_user_context = UserContext(uid="user456", is_pro_user=False)
     
     # Example with pro user
+    print("\n--- Pro User Example ---")
     result = await Runner.run(
         user_context_agent, 
         "Tell me about myself and my purchases", 
         context=pro_user_context
     )
+    print("Response for Pro User:", result.final_output)
     
     # Example with free user
+    print("\n--- Free User Example ---")
     result = await Runner.run(
         user_context_agent, 
         "Tell me about myself and my purchases", 
         context=free_user_context
     )
+    print("Response for Free User:", result.final_output)
 ```
 This runs the AI with two different users:
 - A pro user who gets premium responses and has purchase history
@@ -121,9 +141,12 @@ This runs the AI with two different users:
 ## Try It Yourself! 🚀
 1. Install the required packages:
    ```
-   uv add openai-agents dotenv
+   uv add openai-agents python-dotenv
    ```
-2. Create a `.env` file with your API key
+2. Create a `.env` file with your OpenAI API key:
+   ```
+   OPENAI_API_KEY=your_api_key_here
+   ```
 3. Run the program:
    ```
    uv run basiccontext.py
@@ -131,8 +154,9 @@ This runs the AI with two different users:
 4. Try adding more user information or creating new user types!
 
 ## What You'll Learn 🧠
-- How to create and use context objects
-- How to make tools that access context information
+- How to create and use context objects with dataclasses
+- How to make async tools that access context information
 - How to create agents that give personalized responses
+- How to use generic typing with agents (Agent[UserContext])
 
 Happy coding! 🎉 

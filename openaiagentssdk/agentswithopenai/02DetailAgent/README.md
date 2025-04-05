@@ -16,6 +16,18 @@ Then we create a **Triage Agent** that decides which helper to use based on your
 ## 📝 The Code Explained
 
 ```python
+from agents import Agent, InputGuardrail, GuardrailFunctionOutput, Runner
+from pydantic import BaseModel
+import asyncio
+from dotenv import load_dotenv
+from agents import set_default_openai_key
+import os
+
+load_dotenv()
+
+openai_api_key = os.environ.get("OPENAI_API_KEY")
+set_default_openai_key(openai_api_key)
+
 # First we create a special checker that looks at homework questions
 class HomeworkOutput(BaseModel):
     is_homework: bool
@@ -62,30 +74,42 @@ triage_agent = Agent(
 
 ### 🔍 Let's Break It Down:
 
-1. **Guardrails**: These are like safety checks that make sure the AI only answers appropriate questions
-2. **Handoffs**: These let one AI agent pass a question to another agent who's better at answering it
-3. **Triage**: This means sorting questions and sending them to the right helper
+1. **Guardrails**: These are like safety checks that make sure the AI only answers appropriate questions. In this case, we check if the question is homework-related.
+2. **Handoffs**: These let one AI agent pass a question to another agent who's better at answering it. Our triage agent can hand off to either the math or history tutor.
+3. **Triage**: This means sorting questions and sending them to the right helper based on the subject matter.
 
-## 🚀 How to Run It:
+## 🚀 How It Works in Action:
 
-1. Make sure you have Python installed on your computer
-2. Install the required packages:
-   ```
-   pip install agentswithopenai python-dotenv
-   ```
-3. Create a file called `.env` with your API key
-4. Run the program:
-   ```
-   python detailagent.py
-   ```
-5. See how different questions get sent to different tutors!
+The main function demonstrates how the system works:
+
+```python
+async def main():
+    # First example - homework question about history
+    result = await Runner.run(triage_agent, "who was the first president of the united states?")
+    print("History question result:", result.final_output)
+    
+    # This would fail because it is not a homework question
+    # result = await Runner.run(triage_agent, "What is life?")
+    # print("Philosophy homework result:", result.final_output)
+
+    # Second example - modified to be a homework question about philosophy
+    result = await Runner.run(triage_agent, "For my philosophy homework, can you explain how ancient Greek philosophers viewed the meaning of life?")
+    print("Philosophy homework result:", result.final_output)
+```
+
+1. First, we ask a history question about the first US president
+2. Then we have a commented-out example that would fail the guardrail check
+3. Finally, we ask a philosophy homework question that passes the guardrail
 
 ## 🎮 Try It Yourself! 🚀
 1. Install the required packages:
    ```
-   uv add openai-agents dotenv pydantic
+   uv add openai-agents python-dotenv pydantic
    ```
-2. Create a `.env` file with your API key
+2. Create a `.env` file with your OpenAI API key:
+   ```
+   OPENAI_API_KEY=your_api_key_here
+   ```
 3. Run the program:
    ```
    uv run detailagent.py
@@ -96,12 +120,13 @@ triage_agent = Agent(
 
 From this example, you'll understand:
 - How to create multiple agents that work together
-- How to use guardrails to check inputs
-- How to make agents hand off tasks to other agents
+- How to use guardrails to check inputs and filter out inappropriate questions
+- How to make agents hand off tasks to other specialist agents
 - How to create structured outputs with Pydantic models
+- How to use async functions with AI agents
 
 ## 🌈 Next Steps
 
-Once you've mastered this example, try the Basic Configuration example to learn how to customize your agents even more!
+Once you've mastered this example, try creating your own system of specialized agents that can work together to solve more complex problems!
 
 Happy coding! 🎉 

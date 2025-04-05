@@ -1,177 +1,232 @@
 # 🤖 Agents As Tools Example
 
 ## What This Code Does (Big Picture)
-Imagine having a team of robot specialists where one robot can ask another for help with specific tasks! This code shows how to create a system where a manager AI can delegate tasks to specialist AIs that are experts in different areas.
+Imagine having a team of robot specialists where one robot can ask another for help with specific tasks! This code shows how to create a system where a translation coordinator can delegate tasks to specialist translators that are experts in different languages.
 
 Now, let's go step by step!
 
 ## Step 1: Setting Up the Magic Key 🗝️
 ```python
-from agentswithopenai import Agent, Runner, function_tool, set_default_openai_key
-from dotenv import load_dotenv
+from agents import Agent, Runner, set_default_openai_key
 import asyncio
+from dotenv import load_dotenv
 import os
 
 load_dotenv()
+
 openai_api_key = os.environ.get("OPENAI_API_KEY")
 set_default_openai_key(openai_api_key)
 ```
 The AI assistants need a magic key (API key) to work properly.
 
-This code finds the magic key hidden in a secret file (.env) and unlocks it.
+This code finds the OpenAI API key hidden in a secret file (.env), unlocks it, and sets it as the default key for our agents.
 
-## Step 2: Creating Specialist Agents 👨‍🔬👩‍🏫👨‍💻
+## Step 2: Creating Specialist Translation Agents 🌍🌎🌏
 ```python
-math_specialist = Agent(
-    name="Math Specialist",
+# Create specialized translation agents
+spanish_agent = Agent(
+    name="Spanish Translator",
     instructions="""
-    You are a mathematics expert. Solve math problems step by step,
-    showing your work and explaining each step clearly.
-    Use proper mathematical notation when helpful.
-    Double-check your calculations for accuracy.
+    You are a professional Spanish translator.
+    Translate the user's message to Spanish accurately and naturally.
+    Maintain the tone and style of the original message.
+    If there are cultural nuances, adapt them appropriately for Spanish-speaking audiences.
     """,
 )
 
-writing_specialist = Agent(
-    name="Writing Specialist",
+french_agent = Agent(
+    name="French Translator",
     instructions="""
-    You are a writing expert. Help improve text by enhancing clarity,
-    fixing grammar issues, and making the writing more engaging.
-    Explain your changes so the user understands how to improve their writing.
-    Consider the audience and purpose of the text when making suggestions.
+    You are a professional French translator.
+    Translate the user's message to French accurately and naturally.
+    Maintain the tone and style of the original message.
+    If there are cultural nuances, adapt them appropriately for French-speaking audiences.
     """,
 )
 
-research_specialist = Agent(
-    name="Research Specialist",
+german_agent = Agent(
+    name="German Translator",
     instructions="""
-    You are a research expert. Find and summarize information on various topics,
-    providing well-organized and accurate information.
-    Cite sources when possible and distinguish between facts and opinions.
-    Present information in a structured, easy-to-understand format.
+    You are a professional German translator.
+    Translate the user's message to German accurately and naturally.
+    Maintain the tone and style of the original message.
+    If there are cultural nuances, adapt them appropriately for German-speaking audiences.
     """,
 )
 ```
-This creates three specialist AIs:
-- A math expert who solves problems step by step
-- A writing expert who improves text and explains changes
-- A research expert who finds and summarizes information
+This creates three specialist translation agents:
+- A Spanish translator who adapts content for Spanish-speaking audiences
+- A French translator who adapts content for French-speaking audiences
+- A German translator who adapts content for German-speaking audiences
 
-## Step 3: Creating Tools That Use These Specialists 🛠️
+Each translator is instructed to maintain the original tone and style while adapting cultural nuances appropriately.
+
+## Step 3: Creating an Orchestrator Agent That Uses Translators as Tools 🎭
 ```python
-@function_tool
-async def solve_math_problem(problem: str) -> str:
-    """Solve a mathematical problem using the Math Specialist"""
-    result = await Runner.run(math_specialist, problem)
-    return result.final_output
-
-@function_tool
-async def improve_writing(text: str) -> str:
-    """Improve writing using the Writing Specialist"""
-    result = await Runner.run(writing_specialist, text)
-    return result.final_output
-
-@function_tool
-async def research_question(question: str) -> str:
-    """Research a topic using the Research Specialist"""
-    result = await Runner.run(research_specialist, question)
-    return result.final_output
-```
-These tools:
-- Take a problem, text, or question as input
-- Send it to the appropriate specialist agent
-- Return the specialist's response
-
-## Step 4: Creating a Manager Agent 🧑‍💼
-```python
-manager_agent = Agent(
-    name="Task Manager",
+# Create an orchestrator agent that uses the translation agents as tools
+orchestrator_agent = Agent(
+    name="Translation Orchestrator",
     instructions="""
-    You are a helpful assistant that can handle various tasks by delegating to specialists.
-    - For math problems, use the solve_math_problem tool
-    - For writing improvement, use the improve_writing tool
-    - For research questions, use the research_question tool
+    You are a multilingual translation coordinator. You help users translate text into different languages.
     
-    Determine which specialist would be best for each user request and use the appropriate tool.
-    If a request doesn't clearly fit one specialist, ask clarifying questions.
+    When a user requests a translation:
+    1. Identify which language(s) they want the text translated to
+    2. Use the appropriate translation tool for each language
+    3. Present the translations clearly, labeling each one
+    4. If asked for multiple translations, provide all of them
+    5. If the target language is unclear, ask for clarification
+    
+    Be helpful and efficient in coordinating translations.
     """,
-    tools=[solve_math_problem, improve_writing, research_question],
+    tools=[
+        spanish_agent.as_tool(
+            tool_name="translate_to_spanish",
+            tool_description="Translate the user's message to Spanish",
+        ),
+        french_agent.as_tool(
+            tool_name="translate_to_french",
+            tool_description="Translate the user's message to French",
+        ),
+        german_agent.as_tool(
+            tool_name="translate_to_german",
+            tool_description="Translate the user's message to German",
+        ),
+    ],
 )
 ```
-This creates a manager AI that:
-- Understands different types of requests
-- Decides which specialist to use for each request
-- Delegates tasks to the appropriate specialist
+This creates a translation coordinator that:
+- Understands translation requests
+- Identifies which language(s) the user wants
+- Uses the appropriate translator for each language
+- Presents translations clearly with labels
+- Handles multiple translation requests
 - Asks for clarification if needed
 
-## Step 5: Running the Program with Different Requests 🏃‍♂️
-```python
-async def main():
-    # Example requests for different specialists
-    math_query = "Solve the quadratic equation: 2x² + 5x - 3 = 0"
-    writing_query = "Can you improve this sentence: 'The cat sat on the mat and it was happy.'"
-    research_query = "What are the main causes of climate change?"
-    
-    # Run the manager agent with each query
-    print("\n--- Math Problem ---")
-    result = await Runner.run(manager_agent, math_query)
-    print(result.final_output)
-    
-    print("\n--- Writing Improvement ---")
-    result = await Runner.run(manager_agent, writing_query)
-    print(result.final_output)
-    
-    print("\n--- Research Question ---")
-    result = await Runner.run(manager_agent, research_query)
-    print(result.final_output)
-```
-This tests the system with different types of requests:
-1. A math problem (should go to the math specialist)
-2. A writing improvement request (should go to the writing specialist)
-3. A research question (should go to the research specialist)
+The key innovation here is using the `.as_tool()` method to convert each specialist agent into a tool that the orchestrator can use.
 
-## Step 6: Creating an Interactive Mode 💬
+## Step 4: Creating an Advanced Multilingual Assistant 🌐
 ```python
-print("\n--- Interactive Mode ---")
+# Create a more complex agent that combines translation with other capabilities
+advanced_assistant = Agent(
+    name="Multilingual Assistant",
+    instructions="""
+    You are a helpful assistant that can communicate in multiple languages and help with various tasks.
+    
+    Your capabilities include:
+    1. Answering questions in the user's preferred language
+    2. Translating content between languages
+    3. Summarizing information
+    4. Providing recommendations
+    
+    Use the appropriate tools based on the user's request. If they ask for translations,
+    use the translation tools. For other requests, respond directly.
+    
+    Always be helpful, accurate, and respectful.
+    """,
+    tools=[
+        orchestrator_agent.as_tool(
+            tool_name="translate_content",
+            tool_description="Translate content between different languages",
+        ),
+    ],
+)
+```
+This creates an even more advanced assistant that:
+- Has multiple capabilities beyond just translation
+- Can answer questions, summarize information, and provide recommendations
+- Uses the orchestrator agent as a tool for translation requests
+- Responds directly for non-translation requests
+
+This demonstrates nested agent-as-tool usage, where the advanced assistant uses the orchestrator, which in turn uses the specialist translators.
+
+## Step 5: Running Basic Translation Examples 🏃‍♂️
+```python
+print("=== Basic Translation Example ===")
+print("Query: Say 'Hello, how are you?' in Spanish.")
+
+result = await Runner.run(orchestrator_agent, input="Say 'Hello, how are you?' in Spanish.")
+print("\nResponse:")
+print(result.final_output)
+
+print("\n=== Multiple Languages Example ===")
+print("Query: Translate 'I love artificial intelligence' to Spanish, French, and German.")
+
+result = await Runner.run(orchestrator_agent, input="Translate 'I love artificial intelligence' to Spanish, French, and German.")
+print("\nResponse:")
+print(result.final_output)
+```
+This tests the orchestrator with two different translation requests:
+1. A simple request to translate a greeting to Spanish
+2. A more complex request to translate a phrase to multiple languages
+
+## Step 6: Testing Nested Agents 🪆
+```python
+print("\n=== Nested Agents Example ===")
+print("Query: I need to write an email in Spanish to my colleague about our project deadline.")
+
+result = await Runner.run(advanced_assistant, input="I need to write an email in Spanish to my colleague about our project deadline.")
+print("\nResponse:")
+print(result.final_output)
+```
+This tests the advanced assistant with a request that requires:
+1. Understanding the user needs to write an email
+2. Recognizing it needs to be in Spanish
+3. Using the translation orchestrator tool
+4. The orchestrator then using the Spanish translator tool
+
+This demonstrates how agents can be nested to handle complex, multi-step tasks.
+
+## Step 7: Creating an Interactive Mode 💬
+```python
+# Interactive mode
+print("\n=== Interactive Translation Mode ===")
 print("Type 'exit' to quit")
 
 while True:
-    user_input = input("\nYou: ")
+    user_input = input("\nYour request: ")
     if user_input.lower() == 'exit':
         break
     
-    result = await Runner.run(manager_agent, user_input)
-    print(f"\nManager: {result.final_output}")
+    print("Processing...")
+    result = await Runner.run(advanced_assistant, input=user_input)
+    print("\nResponse:")
+    print(result.final_output)
 ```
 This creates an interactive mode where:
-- You can ask any type of question
-- The manager decides which specialist to use
-- You get responses from the appropriate specialist
+- You can make any request to the advanced assistant
+- The assistant decides whether to use its translation capabilities
+- You see the assistant's responses
 - You can type "exit" to quit
 
 ## Final Summary 📌
-✅ We created specialist agents for math, writing, and research
-✅ We created tools that delegate tasks to these specialists
-✅ We created a manager agent that decides which specialist to use
-✅ We tested the system with different types of requests
-✅ We created an interactive mode for asking any question
+✅ We created specialist agents for Spanish, French, and German translation
+✅ We created an orchestrator agent that uses translators as tools
+✅ We created an advanced assistant that uses the orchestrator as a tool
+✅ We demonstrated nested agent-as-tool usage for complex tasks
+✅ We tested the system with different types of translation requests
+✅ We created an interactive mode for making any request
 
 ## Try It Yourself! 🚀
 1. Install the required packages:
    ```
-   uv add openai-agents dotenv
+   uv add openai-agents python-dotenv
    ```
-2. Create a `.env` file with your API key
+2. Create a `.env` file with your OpenAI API key:
+   ```
+   OPENAI_API_KEY=your_api_key_here
+   ```
 3. Run the program:
    ```
    uv run agentsastools.py
    ```
-4. Try asking different types of questions to see which specialist handles them!
+4. Try asking for translations in different languages or making other requests!
 
 ## What You'll Learn 🧠
-- How to create a hierarchy of agents
-- How to use agents as tools for other agents
-- How to delegate tasks based on specialization
-- How to build complex agent systems
+- How to create specialist agents for specific tasks
+- How to convert agents into tools using the `.as_tool()` method
+- How to create orchestrator agents that delegate to specialists
+- How to nest agents for handling complex, multi-step tasks
+- How to build a hierarchical system of agents with different responsibilities
+- How to combine translation capabilities with other assistant features
 
 Happy coding! 🎉 

@@ -1,7 +1,7 @@
 import asyncio
 from openai.types.chat import ChatCompletionChunk
 from openai.types.chat.chat_completion_chunk import ChoiceDelta
-from agentswithopenai import Agent, Runner, set_default_openai_key
+from agents import Agent, Runner, set_default_openai_key
 from dotenv import load_dotenv
 import os
 import time

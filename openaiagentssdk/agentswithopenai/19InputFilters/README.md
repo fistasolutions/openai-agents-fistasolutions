@@ -1,217 +1,358 @@
-# 🧠 Customizing Models Example
+# 🔍 Input Filters Example
 
 ## What This Code Does (Big Picture)
-Imagine being able to choose exactly which AI brain your robot friend uses! This code shows how to customize which AI models your assistants use, how to set specific parameters for each model, and how to compare the results from different models.
+Imagine having a customer service system where you can transform customer messages before they reach specialists! This code shows how to create input filters that can add context, remove sensitive information, or add system instructions before messages are handed off to specialized agents.
 
 Now, let's go step by step!
 
 ## Step 1: Setting Up the Magic Key 🗝️
 ```python
-from agentswithopenai import Agent, Runner, ModelSettings, set_default_openai_key
-from dotenv import load_dotenv
+from agents import Agent, handoff, Runner, set_default_openai_key
+from agents.extensions import handoff_filters
 import asyncio
+from dotenv import load_dotenv
 import os
-import time
+from typing import List, Dict, Any
 
 load_dotenv()
+
 openai_api_key = os.environ.get("OPENAI_API_KEY")
 set_default_openai_key(openai_api_key)
 ```
 The AI assistants need a magic key (API key) to work properly.
 
-This code finds the magic key hidden in a secret file (.env) and unlocks it.
+This code finds the OpenAI API key hidden in a secret file (.env), unlocks it, and sets it as the default key for our agents.
 
-## Step 2: Creating Model Settings for Different Models ⚙️
+## Step 2: Creating Custom Input Filters 🧹
 ```python
-# GPT-3.5 Turbo settings
-gpt35_settings = ModelSettings(
-    model="gpt-3.5-turbo",
-    temperature=0.7,
-    max_tokens=500
+# Create a custom input filter that adds context about the customer
+def add_customer_context(input_text: str) -> str:
+    return f"""
+Customer context: Gold tier member since 2019, prefers email communication, has purchased premium plan.
+
+Customer inquiry: {input_text}
+"""
+
+# Create a custom wrapper for remove_all_tools for demonstration purposes
+def demo_remove_all_tools(input_text: str) -> str:
+    # This is a simplified version just for demonstration
+    return "This would remove all tool references from: " + input_text
+
+# Create a custom input filter that adds system instructions
+def add_system_instructions(input_text: str) -> str:
+    return f"""
+SYSTEM INSTRUCTIONS:
+- Be concise and direct in your responses
+- Use bullet points for lists
+- Avoid technical jargon unless necessary
+- Always confirm understanding before proceeding
+
+USER QUERY:
+{input_text}
+"""
+
+# Create a custom input filter that sanitizes sensitive information
+def sanitize_sensitive_info(input_text: str) -> str:
+    # In a real implementation, this would use regex or more sophisticated methods
+    # to identify and redact sensitive information
+    sanitized = input_text
+    sanitized = sanitized.replace("credit card", "[PAYMENT METHOD]")
+    sanitized = sanitized.replace("SSN", "[REDACTED ID]")
+    sanitized = sanitized.replace("password", "[CREDENTIALS]")
+    sanitized = sanitized.replace("account number", "[ACCOUNT ID]")
+    
+    # Add a note about sanitization if changes were made
+    if sanitized != input_text:
+        sanitized += "\n\n[Note: Some sensitive information has been redacted for security purposes.]"
+    
+    return sanitized
+```
+This creates four different input filters:
+- `add_customer_context`: Adds information about the customer's status and preferences
+- `demo_remove_all_tools`: Demonstrates how to remove tool references (simplified version)
+- `add_system_instructions`: Adds formatting and style instructions for the agent
+- `sanitize_sensitive_info`: Replaces sensitive information with redacted placeholders
+
+Each filter takes an input text and returns a modified version of that text.
+
+## Step 3: Creating Specialized Agents 👨‍💼👩‍💻👨‍💼
+```python
+# Create specialized agents for different purposes
+faq_agent = Agent(
+    name="FAQ Agent",
+    instructions="""
+    You are an FAQ specialist who provides clear, concise answers to common questions.
+    
+    Your responsibilities:
+    1. Provide accurate information about our products and services
+    2. Answer frequently asked questions efficiently
+    3. Direct users to relevant resources when appropriate
+    4. Keep responses brief and to the point
+    
+    Stick to answering common questions and avoid lengthy explanations unless necessary.
+    """,
 )
 
-# GPT-4 settings
-gpt4_settings = ModelSettings(
-    model="gpt-4",
-    temperature=0.7,
-    max_tokens=500
+technical_agent = Agent(
+    name="Technical Agent",
+    instructions="""
+    You are a technical support specialist who helps users with complex technical issues.
+    
+    Your responsibilities:
+    1. Troubleshoot technical problems step by step
+    2. Provide clear instructions for resolving issues
+    3. Explain technical concepts in accessible language
+    4. Recommend best practices for using our products
+    
+    Be thorough but clear in your explanations, and focus on practical solutions.
+    """,
 )
 
-# GPT-4 with different parameters
-gpt4_creative_settings = ModelSettings(
-    model="gpt-4",
-    temperature=1.0,  # Higher temperature for more creative responses
-    max_tokens=1000,  # More tokens for longer responses
-    top_p=0.9,
-    frequency_penalty=0.5,
-    presence_penalty=0.5
-)
-
-# Claude settings (if available)
-claude_settings = ModelSettings(
-    model="claude-3-5-sonnet-20240620",
-    temperature=0.7,
-    max_tokens=500
+billing_agent = Agent(
+    name="Billing Agent",
+    instructions="""
+    You are a billing specialist who handles financial and account-related inquiries.
+    
+    Your responsibilities:
+    1. Address questions about billing and payments
+    2. Explain pricing plans and subscription options
+    3. Help with account management issues
+    4. Provide information about refunds and credits
+    
+    Be precise and transparent about financial matters, and maintain customer privacy.
+    """,
 )
 ```
-These create settings for different AI models:
-- GPT-3.5 Turbo: A faster, more economical model
-- GPT-4: A more powerful, advanced model
-- GPT-4 Creative: The same model but with settings for more creative responses
-- Claude: An alternative model from Anthropic (if available)
+This creates three specialized agents:
+- An FAQ agent who answers common questions
+- A technical agent who helps with technical issues
+- A billing agent who handles financial inquiries
 
-## Step 3: Creating Agents with Different Models 🤖
+## Step 4: Creating Handoff Objects with Input Filters 🔄
 ```python
-gpt35_agent = Agent(
-    name="GPT-3.5 Agent",
-    instructions="You are a helpful assistant powered by GPT-3.5 Turbo. Provide concise, accurate responses.",
-    model_settings=gpt35_settings
+# Create handoff objects with different input filters
+faq_handoff = handoff(
+    agent=faq_agent,
+    input_filter=handoff_filters.remove_all_tools,  # This is fine as it will be used correctly in handoff
+    tool_name_override="ask_faq_specialist",
+    tool_description_override="Transfer to an FAQ specialist for answers to common questions.",
 )
 
-gpt4_agent = Agent(
-    name="GPT-4 Agent",
-    instructions="You are a helpful assistant powered by GPT-4. Provide detailed, nuanced responses.",
-    model_settings=gpt4_settings
+technical_handoff = handoff(
+    agent=technical_agent,
+    input_filter=add_system_instructions,  # Add system instructions to the input
+    tool_name_override="get_technical_support",
+    tool_description_override="Transfer to a technical specialist for help with technical issues.",
 )
 
-gpt4_creative_agent = Agent(
-    name="GPT-4 Creative Agent",
-    instructions="You are a creative assistant powered by GPT-4. Generate imaginative, original content.",
-    model_settings=gpt4_creative_settings
-)
-
-claude_agent = Agent(
-    name="Claude Agent",
-    instructions="You are a helpful assistant powered by Claude. Provide thoughtful, balanced responses.",
-    model_settings=claude_settings
+billing_handoff = handoff(
+    agent=billing_agent,
+    input_filter=lambda text: sanitize_sensitive_info(add_customer_context(text)),  # Chain multiple filters
+    tool_name_override="contact_billing_department",
+    tool_description_override="Transfer to the billing department for help with account and payment issues.",
 )
 ```
-This creates four different AI assistants:
-- One using GPT-3.5 Turbo for faster, more economical responses
-- One using GPT-4 for more detailed, nuanced responses
-- One using GPT-4 with creative settings for more imaginative content
-- One using Claude for an alternative perspective (if available)
+This creates handoff objects that:
+- Connect to the specialized agents
+- Apply different input filters to the messages
+- Use professional tool names and descriptions
 
-## Step 4: Running the Program with Different Queries 🏃‍♂️
+Note how each handoff uses a different input filter strategy:
+1. The FAQ handoff uses a built-in filter to remove tool references
+2. The technical handoff adds system instructions
+3. The billing handoff chains multiple filters together (sanitize + add context)
+
+## Step 5: Creating a Main Agent with Tools and Filtered Handoffs 🤖
 ```python
-async def main():
-    # Test queries
-    factual_query = "Explain how photosynthesis works in plants"
-    creative_query = "Write a short story about a robot discovering emotions"
-    complex_query = "What are the ethical implications of artificial intelligence in healthcare?"
+# Create a main agent that can hand off to specialized agents with filtered inputs
+main_agent = Agent(
+    name="Customer Service Agent",
+    instructions="""
+    You are the primary customer service agent. Your role is to:
     
-    # Compare models on factual query
-    print("\n--- Factual Query: Photosynthesis ---")
+    1. Greet customers and understand their initial needs
+    2. Handle simple inquiries directly
+    3. Direct customers to the appropriate specialized agent when needed:
+       - FAQ Specialist: For common questions about our products and services
+       - Technical Support: For help with technical issues and troubleshooting
+       - Billing Department: For questions about billing, payments, and accounts
     
-    start_time = time.time()
-    result = await Runner.run(gpt35_agent, factual_query)
-    gpt35_time = time.time() - start_time
-    print(f"\nGPT-3.5 Response (took {gpt35_time:.2f} seconds):")
-    print(result.final_output)
+    Before transferring a customer, briefly explain why you're connecting them with a specialist
+    and what they can expect from the handoff.
     
-    start_time = time.time()
-    result = await Runner.run(gpt4_agent, factual_query)
-    gpt4_time = time.time() - start_time
-    print(f"\nGPT-4 Response (took {gpt4_time:.2f} seconds):")
-    print(result.final_output)
-    
-    # Compare models on creative query
-    print("\n--- Creative Query: Robot Story ---")
-    
-    start_time = time.time()
-    result = await Runner.run(gpt4_agent, creative_query)
-    print(f"\nGPT-4 Standard Response:")
-    print(result.final_output)
-    
-    start_time = time.time()
-    result = await Runner.run(gpt4_creative_agent, creative_query)
-    print(f"\nGPT-4 Creative Response:")
-    print(result.final_output)
-```
-This tests different models with various types of queries:
-1. A factual query about photosynthesis
-2. A creative query asking for a short story
-3. A complex query about ethics in AI
-
-It also measures and compares:
-- Response times for different models
-- Quality and style differences between models
-- How parameter settings affect creativity
-
-## Step 5: Creating a Model Comparison Function 📊
-```python
-async def compare_models(query, agents, show_timing=True):
-    """Compare responses from multiple agents on the same query"""
-    print(f"\n--- Query: {query} ---")
-    
-    results = {}
-    for agent in agents:
-        start_time = time.time()
-        result = await Runner.run(agent, query)
-        elapsed_time = time.time() - start_time
-        
-        print(f"\n{agent.name} Response" + (f" (took {elapsed_time:.2f} seconds)" if show_timing else "") + ":")
-        print(result.final_output)
-        
-        results[agent.name] = {
-            "output": result.final_output,
-            "time": elapsed_time
+    You have access to customer tools that should not be shared with other agents.
+    """,
+    handoffs=[
+        faq_handoff,
+        technical_handoff,
+        billing_handoff,
+    ],
+    tools=[
+        {
+            "type": "function",
+            "function": {
+                "name": "access_customer_database",
+                "description": "Access the customer database to retrieve customer information",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "customer_id": {
+                            "type": "string",
+                            "description": "The customer's ID"
+                        }
+                    },
+                    "required": ["customer_id"]
+                }
+            }
+        },
+        {
+            "type": "function",
+            "function": {
+                "name": "update_customer_record",
+                "description": "Update the customer's record in the database",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "customer_id": {
+                            "type": "string",
+                            "description": "The customer's ID"
+                        },
+                        "field": {
+                            "type": "string",
+                            "description": "The field to update"
+                        },
+                        "value": {
+                            "type": "string",
+                            "description": "The new value for the field"
+                        }
+                    },
+                    "required": ["customer_id", "field", "value"]
+                }
+            }
         }
+    ]
+)
+```
+This creates a main customer service agent that:
+- Handles general inquiries
+- Has access to customer database tools
+- Uses our handoff objects with input filters
+- Explains handoffs to customers
+
+The main agent has tools that should not be shared with specialists, which is why the `remove_all_tools` filter is important.
+
+## Step 6: Demonstrating the Effect of Input Filters 🧪
+```python
+# Function to demonstrate the effect of input filters
+def demonstrate_filters():
+    sample_input = "I need help with my account number 12345-6789. My credit card isn't working and I forgot my password."
     
-    return results
+    print("=== Input Filter Demonstration ===\n")
+    print(f"Original input: \"{sample_input}\"\n")
+    
+    print("After demo_remove_all_tools (simulating handoff_filters.remove_all_tools):")
+    print(f"\"{demo_remove_all_tools(sample_input)}\"\n")
+    
+    print("After add_customer_context:")
+    print(f"\"{add_customer_context(sample_input)}\"\n")
+    
+    print("After add_system_instructions:")
+    print(f"\"{add_system_instructions(sample_input)}\"\n")
+    
+    print("After sanitize_sensitive_info:")
+    print(f"\"{sanitize_sensitive_info(sample_input)}\"\n")
+    
+    print("After chaining filters (sanitize + add_customer_context):")
+    print(f"\"{sanitize_sensitive_info(add_customer_context(sample_input))}\"\n")
 ```
 This function:
-- Takes a query and a list of agents
-- Runs the query on each agent
-- Measures response time for each
-- Displays the results side by side for comparison
+- Takes a sample input with sensitive information
+- Shows how each filter transforms the input
+- Demonstrates chaining multiple filters together
+- Provides a visual demonstration of the filters' effects
 
-## Step 6: Running Comprehensive Comparisons 🔍
+## Step 7: Testing with Different Customer Inquiries 🧪
 ```python
-# Run comprehensive comparisons
-all_agents = [gpt35_agent, gpt4_agent, gpt4_creative_agent]
-if "claude" in claude_settings.model.lower():
-    all_agents.append(claude_agent)
+# Example customer inquiries for different scenarios
+faq_inquiry = "What are the differences between your Basic, Premium, and Enterprise plans?"
+technical_inquiry = "I'm having trouble connecting my device to Wi-Fi. I've tried restarting it but it still won't connect."
+billing_inquiry = "I was charged twice for my subscription this month. My account number is ABC-12345 and I paid with my credit card ending in 7890."
 
-test_queries = [
-    "Explain quantum computing in simple terms",
-    "Write a haiku about artificial intelligence",
-    "What are three ways to improve productivity?",
-    "Debate the pros and cons of remote work"
-]
+# Test the main agent with different inquiries
+print("\n=== FAQ Inquiry Example ===")
+print(f"Customer: {faq_inquiry}")
 
-for query in test_queries:
-    await compare_models(query, all_agents)
+try:
+    result = await Runner.run(main_agent, input=faq_inquiry)
+    print("\nFinal Response:")
+    print(result.final_output)
+except Exception as e:
+    print(f"\nError: {e}")
+    print("Skipping this example due to error.")
 ```
-This runs a comprehensive comparison:
-- Using multiple test queries
-- Testing all available models
-- Showing side-by-side comparisons of responses
-- Measuring performance differences
+This tests the system with different types of customer inquiries:
+1. An FAQ inquiry about plan differences
+2. A technical inquiry about Wi-Fi connectivity
+3. A billing inquiry with sensitive information
+
+Each inquiry should trigger a different handoff with a different input filter.
+
+## Step 8: Creating an Interactive Customer Service Mode 💬
+```python
+# Interactive mode
+print("\n=== Interactive Customer Service Mode ===")
+print("Type 'exit' to quit")
+
+while True:
+    user_input = input("\nYour inquiry: ")
+    if user_input.lower() == 'exit':
+        break
+    
+    print("Processing...")
+    try:
+        result = await Runner.run(main_agent, input=user_input)
+        print("\nFinal Response:")
+        print(result.final_output)
+    except Exception as e:
+        print(f"\nError: {e}")
+        print("Could not process your inquiry due to an error.")
+```
+This creates an interactive mode where:
+- You can type any customer service inquiry
+- The main agent will handle it or hand it off with filtered input
+- Error handling is included for robustness
+- You can type "exit" to quit
 
 ## Final Summary 📌
-✅ We created custom settings for different AI models
-✅ We created agents that use different models and parameters
-✅ We compared models on factual, creative, and complex queries
-✅ We measured response times and quality differences
-✅ We created a function for comprehensive model comparisons
+✅ We created custom input filters for different purposes
+✅ We created specialized agents for different customer needs
+✅ We created handoff objects with different input filters
+✅ We demonstrated how each filter transforms input text
+✅ We created a main agent with tools that shouldn't be shared
+✅ We tested the system with different types of customer inquiries
+✅ We created an interactive customer service mode with error handling
 
 ## Try It Yourself! 🚀
 1. Install the required packages:
    ```
-   uv add openai-agents dotenv
+   uv add openai-agents python-dotenv
    ```
-2. Create a `.env` file with your API key
+2. Create a `.env` file with your OpenAI API key:
+   ```
+   OPENAI_API_KEY=your_api_key_here
+   ```
 3. Run the program:
    ```
-   uv run customizingmodels.py
+   uv run inputfilters.py
    ```
-4. Try comparing models with your own questions!
+4. Try asking different types of customer service questions!
 
 ## What You'll Learn 🧠
-- How to configure different AI models
-- How to adjust parameters like temperature and token limits
-- How to compare performance between models
-- How to choose the right model for different tasks
+- How to create custom input filters for different purposes
+- How to use built-in filters like `remove_all_tools`
+- How to chain multiple filters together
+- How to sanitize sensitive information before handoffs
+- How to add context and instructions to inputs
+- How to build a secure customer service system with filtered handoffs
 
 Happy coding! 🎉 
